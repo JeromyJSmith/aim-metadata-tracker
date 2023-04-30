@@ -120,7 +120,7 @@ class AimLogger(BaseLogger):
             elif self._val_metric_prefix and name.startswith(self._val_metric_prefix):
                 name = name[len(self._val_metric_prefix):]
                 context['subset'] = 'val'
-            context.update(self._context)
+            context |= self._context
             self.experiment.track(v, step=step, name=name, context=context)
 
     @property
@@ -200,11 +200,7 @@ class OutputHandler(BaseOutputHandler):
                 ' Please check the output of global_step_transform.'
             )
 
-        metrics = {}
-        for keys, value in rendered_metrics.items():
-            key = '_'.join(keys)
-            metrics[key] = value
-
+        metrics = {'_'.join(keys): value for keys, value in rendered_metrics.items()}
         logger.log_metrics(metrics, step=global_step)
 
 

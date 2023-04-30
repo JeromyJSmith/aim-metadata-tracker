@@ -61,10 +61,7 @@ def upload_repo_runs(buffer: io.BytesIO, bucket_name: str) -> Tuple[bool, str]:
     try:
         s3_client = boto3.client('s3')
         buckets = s3_client.list_buckets()
-        bucket_names = []
-        for bucket in buckets['Buckets']:
-            bucket_names.append(bucket['Name'])
-
+        bucket_names = [bucket['Name'] for bucket in buckets['Buckets']]
         if bucket_name not in bucket_names:
             s3_client.create_bucket(Bucket=bucket_name)
 

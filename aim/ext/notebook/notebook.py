@@ -42,17 +42,17 @@ def get_execution_context():
     else:
         ipython = IPython.get_ipython()
         # @TODO find a stable way to get colab context
-        if ipython is not None and 'google.colab' in str(ipython):
-            # We are in Colab notebook context
-            # global _CURRENT_CONTEXT
-            # _CURRENT_CONTEXT = _COLAB_EXEC_CONTEXT
-            return _COLAB_EXEC_CONTEXT
+        if ipython is not None:
+            if 'google.colab' in str(ipython):
+                # We are in Colab notebook context
+                # global _CURRENT_CONTEXT
+                # _CURRENT_CONTEXT = _COLAB_EXEC_CONTEXT
+                return _COLAB_EXEC_CONTEXT
 
-        # In an IPython command line shell or Jupyter notebook
-        elif ipython is not None and ipython.has_trait("kernel"):
-            # global _CURRENT_CONTEXT
-            # _CURRENT_CONTEXT = _IPYTHON_EXEC_CONTEXT
-            return _IPYTHON_EXEC_CONTEXT
+            elif ipython.has_trait("kernel"):
+                # global _CURRENT_CONTEXT
+                # _CURRENT_CONTEXT = _IPYTHON_EXEC_CONTEXT
+                return _IPYTHON_EXEC_CONTEXT
 
     # Otherwise, we're not in a known notebook context.
     return _OTHER_EXEC_CONTEXT
@@ -125,12 +125,12 @@ def display_notebook(host, port, display, proxy_url=None):
     """Display Aim instance in an ipython context output frame.
     """
     import IPython.display
-    url = "{}:{}{}".format(host, port, _NOTEBOOK_PATH_POSTFIX)
+    url = f"{host}:{port}{_NOTEBOOK_PATH_POSTFIX}"
 
     # @TODO add warning if proxy_url is not defined
     if proxy_url:
         # jupyter-server-proxy supports absolute paths by using it with /proxy/absolute/<port> path
-        url = "{}{}{}{}/".format(proxy_url, '/proxy/absolute/', port, _SAGE_MAKER_NOTEBOOK_PATH_POSTFIX)
+        url = f"{proxy_url}/proxy/absolute/{port}{_SAGE_MAKER_NOTEBOOK_PATH_POSTFIX}/"
         print(url)
 
     shell = """
@@ -183,7 +183,7 @@ def up(options, context):
         return
 
     # other context
-    print("Open {}:{}".format(host, port))
+    print(f"Open {host}:{port}")
 
 
 def version(options, context):
@@ -192,7 +192,7 @@ def version(options, context):
     if result.status is manager.ManagerActionStatuses.Failed:
         print(result.info["message"])
     else:
-        print("Aim v{}".format(result.info["version"]))
+        print(f'Aim v{result.info["version"]}')
 
 
 # Those are aim magic function available commands

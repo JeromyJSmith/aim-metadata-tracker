@@ -155,18 +155,20 @@ def set_log_level(ctx, level):
 @click.pass_context
 def add_config(ctx):
     """Add a new notifier configuration (slack, workplace, etc.)."""
-    if ctx.invoked_subcommand is None:
-        add_new = True
-        while add_new:
-            sub_commands = ctx.command.list_commands(ctx)
-            choice = click.prompt('Select notifier type to add:', show_choices=True, type=click.Choice(sub_commands))
-            sub_cmd = ctx.command.get_command(ctx, choice)
-            extra_args = {}
-            for param in sub_cmd.params:
-                if isinstance(param, click.Option) and param.prompt:
-                    extra_args[param.name] = param.prompt_for_value(ctx)
-            ctx.invoke(sub_cmd, **extra_args)
-            add_new = click.confirm('Would you like to add another notifier?')
+    if ctx.invoked_subcommand is not None:
+        return
+    add_new = True
+    while add_new:
+        sub_commands = ctx.command.list_commands(ctx)
+        choice = click.prompt('Select notifier type to add:', show_choices=True, type=click.Choice(sub_commands))
+        sub_cmd = ctx.command.get_command(ctx, choice)
+        extra_args = {
+            param.name: param.prompt_for_value(ctx)
+            for param in sub_cmd.params
+            if isinstance(param, click.Option) and param.prompt
+        }
+        ctx.invoke(sub_cmd, **extra_args)
+        add_new = click.confirm('Would you like to add another notifier?')
 
 
 @click.command(name='remove')

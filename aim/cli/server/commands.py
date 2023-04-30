@@ -66,9 +66,9 @@ def server(host, port, workers,
     os.environ[AIM_SERVER_MOUNTED_REPO_PATH] = repo_inst.path
 
     click.echo(
-        click.style('Running Aim Server on repo `{}`'.format(repo_inst),
-                    fg='yellow'))
-    click.echo('Server is mounted on {}:{}'.format(host, port), err=True)
+        click.style(f'Running Aim Server on repo `{repo_inst}`', fg='yellow')
+    )
+    click.echo(f'Server is mounted on {host}:{port}', err=True)
     click.echo('Press Ctrl+C to exit')
     analytics.track_event(event_name='[Aim Remote Tracking] Start server')
 

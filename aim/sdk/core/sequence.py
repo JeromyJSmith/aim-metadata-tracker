@@ -246,8 +246,9 @@ class Sequence(Generic[ItemType], ABCSequence):
         alias_names = self.default_aliases.union(aliases)
         container_alias_names = self._container.default_aliases
 
-        query_params = {p: proxy for p in alias_names}
-        query_params.update({cp: c_proxy for cp in container_alias_names})
+        query_params = {p: proxy for p in alias_names} | {
+            cp: c_proxy for cp in container_alias_names
+        }
         return query.check(**query_params)
 
     def __repr__(self) -> str:

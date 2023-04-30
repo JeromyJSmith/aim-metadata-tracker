@@ -34,21 +34,20 @@ class Analytics:
         self._user_id = self._profile['user-id']
 
     def track_install_event(self) -> None:
-        if not self.dev_mode and self.telemetry_enabled:
-            env_key = sys.exec_prefix
-            if env_key in self._profile['envs']:
-                is_new_env = False
-                from aim.__version__ import __version__ as aim_version
-                if aim_version == self._profile['envs'][env_key]:
-                    return
-            else:
-                is_new_env = True
-                from aim.__version__ import __version__ as aim_version
-
-            event_name = '[Aim] install' if is_new_env else '[Aim] upgrade'
-            self.track_event(event_name=event_name, aim_version=aim_version)
-            with self._autocommit():
-                self._profile['envs'][env_key] = aim_version
+        if self.dev_mode or not self.telemetry_enabled:
+            return
+        env_key = sys.exec_prefix
+        from aim.__version__ import __version__ as aim_version
+        if env_key in self._profile['envs']:
+            is_new_env = False
+            if aim_version == self._profile['envs'][env_key]:
+                return
+        else:
+            is_new_env = True
+        event_name = '[Aim] install' if is_new_env else '[Aim] upgrade'
+        self.track_event(event_name=event_name, aim_version=aim_version)
+        with self._autocommit():
+            self._profile['envs'][env_key] = aim_version
 
     def track_event(self, *, event_name: str, **kwargs) -> None:
         if not self.dev_mode and self.telemetry_enabled:
@@ -102,15 +101,15 @@ class Analytics:
             opt_out_url = 'https://aimstack.readthedocs.io/en/latest/community/telemetry.html'
             line_width = max(len(opt_out_msg), len(alert_msg), len(opt_out_url)) + 8
             logger.warning('-' * line_width)
-            logger.warning('{}{}{}'.format(' ' * ((line_width - len(alert_msg)) // 2),
-                                           alert_msg,
-                                           ' ' * ((line_width - len(alert_msg)) // 2)))
-            logger.warning('{}{}{}'.format(' ' * ((line_width - len(opt_out_msg)) // 2),
-                                           opt_out_msg,
-                                           ' ' * ((line_width - len(opt_out_msg)) // 2)))
-            logger.warning('{}{}{}'.format(' ' * ((line_width - len(opt_out_url)) // 2),
-                                           opt_out_url,
-                                           ' ' * ((line_width - len(opt_out_url)) // 2)))
+            logger.warning(
+                f"{' ' * ((line_width - len(alert_msg)) // 2)}{alert_msg}{' ' * ((line_width - len(alert_msg)) // 2)}"
+            )
+            logger.warning(
+                f"{' ' * ((line_width - len(opt_out_msg)) // 2)}{opt_out_msg}{' ' * ((line_width - len(opt_out_msg)) // 2)}"
+            )
+            logger.warning(
+                f"{' ' * ((line_width - len(opt_out_url)) // 2)}{opt_out_url}{' ' * ((line_width - len(opt_out_url)) // 2)}"
+            )
             logger.warning('-' * line_width)
             with self._autocommit():
                 self._profile['telemetry']['warning-shown'] = True

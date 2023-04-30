@@ -101,6 +101,4 @@ class Audio(CustomObject):
         Returns: io.BytesIO
         """
         bs = self.storage.get('data')
-        if not bs:
-            return io.BytesIO()
-        return io.BytesIO(bytes(bs))
+        return io.BytesIO(bytes(bs)) if bs else io.BytesIO()

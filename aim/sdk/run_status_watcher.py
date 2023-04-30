@@ -262,7 +262,11 @@ class RunStatusWatcher:
         self._log_events = EventSet()
 
         self.notifier = get_notifier(self.repo_path)
-        self.watcher_thread = WorkerThread(self.check_for_new_events, daemon=True) if not background else None
+        self.watcher_thread = (
+            None
+            if background
+            else WorkerThread(self.check_for_new_events, daemon=True)
+        )
         self.notifications_queue = NotificationQueue(self.notifier)
 
         StatusNotification.recover_notifications_cache(self._notifications_cache_path)
@@ -275,14 +279,13 @@ class RunStatusWatcher:
     @ttl_cache(maxsize=None, ttl=10)
     def log_level_threshold(self):
         lvl = get_config(self.repo_path).log_level
-        if self._log_lvl_threshold is not None:
-            if self._log_lvl_threshold != lvl:
-                logger.warning(f'Log Notifications level changed '
-                               f'from \'{logging.getLevelName(self._log_lvl_threshold)}\' '
-                               f'to \'{logging.getLevelName(lvl)}\'.')
-                self._log_lvl_threshold = lvl
-        else:
+        if self._log_lvl_threshold is None:
             logger.warning(f'Running with Log Notifications level \'{logging.getLevelName(lvl)}\'')
+            self._log_lvl_threshold = lvl
+        elif self._log_lvl_threshold != lvl:
+            logger.warning(f'Log Notifications level changed '
+                           f'from \'{logging.getLevelName(self._log_lvl_threshold)}\' '
+                           f'to \'{logging.getLevelName(lvl)}\'.')
             self._log_lvl_threshold = lvl
         return lvl
 
@@ -327,8 +330,7 @@ class RunStatusWatcher:
                 run_hash = new_event.obj_idx
                 run = Run(run_hash, repo=self.repo, read_only=True)
                 run_info = run.props.info
-                log_records_seq = run.get_log_records()
-                if log_records_seq:
+                if log_records_seq := run.get_log_records():
                     last_log_index = log_records_seq.last_step()
                     last_notified_index = run_info.last_notification_index
                     if last_log_index > last_notified_index:

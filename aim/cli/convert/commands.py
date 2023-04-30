@@ -60,10 +60,10 @@ def convert_tensorflow(ctx, logdir, flat):
 @click.option('--experiment', '-e', required=False, default=None)
 def convert_mlflow(ctx, tracking_uri=None, **kwargs):
     repo_inst = ctx.obj['repo_inst']
-    tracking_uri = tracking_uri or os.environ.get("MLFLOW_TRACKING_URI")
-    if not tracking_uri:
+    if tracking_uri := tracking_uri or os.environ.get("MLFLOW_TRACKING_URI"):
+        parse_mlflow_logs(repo_inst, tracking_uri, **kwargs)
+    else:
         raise ClickException("MLFlow tracking URI must be provided either trough ENV or CLI.")
-    parse_mlflow_logs(repo_inst, tracking_uri, **kwargs)
 
 
 @convert.command(name='wandb')

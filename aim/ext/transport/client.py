@@ -107,14 +107,12 @@ class Client:
         if self._remote_worker_address == self.remote_path:
             self._remote_channel = self._remote_router_channel
 
+        elif ssl_certfile:
+            self._remote_channel = grpc.secure_channel(self._remote_worker_address,
+                                                       root_certificates,
+                                                       options=options)
         else:
-            # open a channel with worker for further communication
-            if ssl_certfile:
-                self._remote_channel = grpc.secure_channel(self._remote_worker_address,
-                                                           root_certificates,
-                                                           options=options)
-            else:
-                self._remote_channel = grpc.insecure_channel(self._remote_worker_address, options=options)
+            self._remote_channel = grpc.insecure_channel(self._remote_worker_address, options=options)
 
         self._remote_stub = remote_tracking_pb2_grpc.RemoteTrackingServiceStub(self._remote_channel)
 
@@ -133,12 +131,8 @@ class Client:
         import grpc
 
         error_message_template = 'The Aim Remote tracking server version ({}) '\
-                                 'is not compatible with the Aim client version ({}).'\
-                                 'Please upgrade either the Aim Client or the Aim Remote.'
-
-        warning_message_template = 'The Aim Remote tracking server version ({}) ' \
-                                   'and the Aim client version ({}) do not match.' \
-                                   'Consider upgrading either the client or remote tracking server.'
+                                     'is not compatible with the Aim client version ({}).'\
+                                     'Please upgrade either the Aim Client or the Aim Remote.'
 
         try:
             remote_version = self.get_version()
@@ -156,9 +150,12 @@ class Client:
         if client_version == remote_version:
             return
 
-        # if the server has a newer version always force to upgrade the client
         if client_version < remote_version:
             raise RuntimeError(error_message_template.format(remote_version, client_version))
+
+        warning_message_template = 'The Aim Remote tracking server version ({}) ' \
+                                       'and the Aim client version ({}) do not match.' \
+                                       'Consider upgrading either the client or remote tracking server.'
 
         # for other mismatching versions throw a warning for now
         logger.warning(warning_message_template.format(remote_version, client_version))
@@ -168,11 +165,10 @@ class Client:
         worker_port_offset = self._get_worker_port_offset()
         if worker_port_offset == 0:
             return self._remote_path
-        else:
-            router_host = self._remote_path.rsplit(':', maxsplit=1)[0]
-            router_port = int(self._remote_path.rsplit(':', maxsplit=1)[1])
+        router_host = self._remote_path.rsplit(':', maxsplit=1)[0]
+        router_port = int(self._remote_path.rsplit(':', maxsplit=1)[1])
 
-            return f'{router_host}:{router_port + worker_port_offset}'
+        return f'{router_host}:{router_port + worker_port_offset}'
 
     def _get_worker_port_offset(self):
         request = router_messages.ConnectRequest(
@@ -188,8 +184,9 @@ class Client:
         request = router_messages.HeartbeatRequest(
             client_uri=self.uri,
         )
-        response = self._remote_router_stub.client_heartbeat(request, metadata=self._request_metadata)
-        return response
+        return self._remote_router_stub.client_heartbeat(
+            request, metadata=self._request_metadata
+        )
 
     def reconnect(self):
         request = router_messages.ReconnectRequest(
@@ -266,16 +263,14 @@ class Client:
 
     def _run_read_instructions(self, queue_id, resource, method, args):
         def message_stream_generator():
-            header = rpc_messages.InstructionRequest(
+            yield rpc_messages.InstructionRequest(
                 header=rpc_messages.RequestHeader(
                     version='0.1',
                     handler=resource,
                     client_uri=self.uri,
-                    method_name=method
+                    method_name=method,
                 )
             )
-            yield header
-
             stream = pack_stream(encode_tree(args))
             for chunk in stream:
                 yield rpc_messages.InstructionRequest(message=chunk)

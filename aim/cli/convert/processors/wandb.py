@@ -21,7 +21,7 @@ def parse_wandb_logs(repo_inst, entity, project, run_id):
 
     if run_id is None:
         # process all runs
-        runs = client.runs(entity + "/" + project)
+        runs = client.runs(f"{entity}/{project}")
     else:
         try:
             # get the run by run_id
@@ -158,9 +158,7 @@ def _normalize_system_metric_key(key):
     if name.startswith('gpu'):
         name = re.sub(r'^gpu\.', '', name)
 
-        # Cut & paste gpu idx from name to context
-        gpu_idx_match = gpu_idx_pattern.search(name)
-        if gpu_idx_match:
+        if gpu_idx_match := gpu_idx_pattern.search(name):
             gpu_idx_str = gpu_idx_match.group()
             name = name[len(gpu_idx_str):]
             gpu_idx = int(gpu_idx_str.rstrip('.'))

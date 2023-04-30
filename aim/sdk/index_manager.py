@@ -43,9 +43,7 @@ class RepoIndexManager:
     def repo_status(self):
         if self._indexing_in_progress is True:
             return 'indexing in progress'
-        if self.reindex_needed:
-            return 'needs indexing'
-        return 'up-to-date'
+        return 'needs indexing' if self.reindex_needed else 'up-to-date'
 
     @property
     def reindex_needed(self) -> bool:
@@ -69,8 +67,6 @@ class RepoIndexManager:
                     self.index(run_hash)
                 except Exception as e:
                     logger.warning(f'Failed to index Run \'{run_hash}\'. Error: {e}.')
-                    pass
-
                 # sleep for small interval to release index db lock in between and allow
                 # other running jobs to properly finalize and index Run.
                 sleep_interval = .1
@@ -84,8 +80,10 @@ class RepoIndexManager:
 
     def _runs_with_progress(self) -> Iterable[str]:
         runs_with_progress = os.listdir(self.progress_dir)
-        run_hashes = sorted(runs_with_progress, key=lambda r: os.path.getmtime(os.path.join(self.progress_dir, r)))
-        return run_hashes
+        return sorted(
+            runs_with_progress,
+            key=lambda r: os.path.getmtime(os.path.join(self.progress_dir, r)),
+        )
 
     def _next_stalled_run(self):
         for run_hash in self._runs_with_progress():
@@ -93,19 +91,23 @@ class RepoIndexManager:
                 yield run_hash
 
     def _is_run_stalled(self, run_hash: str) -> bool:
-        heartbeat_files = list(sorted(self.heartbeat_dir.glob(f'{run_hash}-*-progress-*-*'), reverse=True))
-        if heartbeat_files:
+        if heartbeat_files := list(
+            sorted(
+                self.heartbeat_dir.glob(f'{run_hash}-*-progress-*-*'), reverse=True
+            )
+        ):
             last_heartbeat = Event(heartbeat_files[0].name)
             last_recorded_heartbeat = self.run_heartbeat_cache.get(run_hash)
-            if last_recorded_heartbeat is None:
+            if (
+                last_recorded_heartbeat is not None
+                and last_heartbeat.idx > last_recorded_heartbeat.idx
+                or last_recorded_heartbeat is None
+            ):
                 self.run_heartbeat_cache[run_hash] = last_heartbeat
             else:
-                if last_heartbeat.idx > last_recorded_heartbeat.idx:
-                    self.run_heartbeat_cache[run_hash] = last_heartbeat
-                else:
-                    time_passed = time.time() - last_recorded_heartbeat.detected_epoch_time
-                    if last_recorded_heartbeat.next_event_in + GRACE_PERIOD < time_passed:
-                        return True
+                time_passed = time.time() - last_recorded_heartbeat.detected_epoch_time
+                if last_recorded_heartbeat.next_event_in + GRACE_PERIOD < time_passed:
+                    return True
 
     def run_needs_indexing(self, run_hash: str) -> bool:
         return os.path.exists(self.progress_dir / run_hash)

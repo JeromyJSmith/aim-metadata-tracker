@@ -65,7 +65,7 @@ def hash_bool(obj: bool) -> int:
     We make sure that `hash(False) == hash(0) != hash(1) == hash(True)` similar
     to Python hash.
     """
-    return hash_number(0) if not obj else hash_number(1)
+    return hash_number(1) if obj else hash_number(0)
 
 
 def hash_bytes(obj: bytes) -> int:

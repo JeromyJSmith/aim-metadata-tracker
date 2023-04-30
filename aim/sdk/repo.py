@@ -129,7 +129,7 @@ class Repo:
             raise RuntimeError(f'Cannot find repository \'{self.path}\'. Please init first.')
 
         self.container_pool: Dict[ContainerConfig, Container] = WeakValueDictionary()
-        self.persistent_pool: Dict[ContainerConfig, Container] = dict()
+        self.persistent_pool: Dict[ContainerConfig, Container] = {}
         self.container_view_pool: Dict[ContainerConfig, Container] = WeakValueDictionary()
 
         self._run_props_cache_hint = None
@@ -282,16 +282,24 @@ class Repo:
         return container
 
     def _get_index_tree(self, name: str, timeout: int):
-        if not self.is_remote_repo:
-            return self._get_index_container(name, timeout).tree()
-        else:
-            return ProxyTree(self._client, name, '', read_only=False, index=True, timeout=timeout)
+        return (
+            ProxyTree(
+                self._client,
+                name,
+                '',
+                read_only=False,
+                index=True,
+                timeout=timeout,
+            )
+            if self.is_remote_repo
+            else self._get_index_container(name, timeout).tree()
+        )
 
     def _get_index_container(self, name: str, timeout: int) -> Container:
         if self.read_only:
             raise ValueError('Repo is read-only')
 
-        name = name + '/index'
+        name += '/index'
         container_config = ContainerConfig(name, None, read_only=True)
         container = self.container_pool.get(container_config)
         if container is None:
@@ -310,10 +318,24 @@ class Repo:
         from_union: bool = False,  # TODO maybe = True by default
         no_cache: bool = False,
     ):
-        if not self.is_remote_repo:
-            return self.request(name, sub, read_only=read_only, from_union=from_union, no_cache=no_cache).tree()
-        else:
-            return ProxyTree(self._client, name, sub, read_only=read_only, from_union=from_union, no_cache=no_cache)
+        return (
+            ProxyTree(
+                self._client,
+                name,
+                sub,
+                read_only=read_only,
+                from_union=from_union,
+                no_cache=no_cache,
+            )
+            if self.is_remote_repo
+            else self.request(
+                name,
+                sub,
+                read_only=read_only,
+                from_union=from_union,
+                no_cache=no_cache,
+            ).tree()
+        )
 
     def request(
             self,
@@ -360,9 +382,8 @@ class Repo:
             if not _props:
                 if read_only:
                     raise RepoIntegrityError(f'Missing props for Run {hash_}')
-                else:
-                    with self._sdb_lock:
-                        _props = self.structured_db.create_run(hash_)
+                with self._sdb_lock:
+                    _props = self.structured_db.create_run(hash_)
             if self.run_props_cache_hint:
                 self.structured_db.caches[self.run_props_cache_hint][hash_] = _props
 
@@ -386,8 +407,7 @@ class Repo:
 
     def iter_runs_from_cache(self, offset: str = None) -> Iterator['Run']:
         db = self.structured_db
-        cache = db.caches.get('runs_cache')
-        if cache:
+        if cache := db.caches.get('runs_cache'):
             run_names = cache.keys()
             try:
                 offset_idx = run_names.index(offset) + 1
@@ -405,12 +425,8 @@ class Repo:
     def _all_run_hashes(self) -> Set[str]:
         if self.is_remote_repo:
             return set(self._remote_repo_proxy.list_all_runs())
-        else:
-            chunks_dir = os.path.join(self.path, 'meta', 'chunks')
-            if os.path.exists(chunks_dir):
-                return set(os.listdir(chunks_dir))
-            else:
-                return set()
+        chunks_dir = os.path.join(self.path, 'meta', 'chunks')
+        return set(os.listdir(chunks_dir)) if os.path.exists(chunks_dir) else set()
 
     def list_all_runs(self) -> List[str]:
         return list(self._all_run_hashes())
@@ -418,27 +434,18 @@ class Repo:
     def _active_run_hashes(self) -> Set[str]:
         if self.is_remote_repo:
             return set(self._remote_repo_proxy.list_active_runs())
-        else:
-            chunks_dir = os.path.join(self.path, 'meta', 'progress')
-            if os.path.exists(chunks_dir):
-                return set(os.listdir(chunks_dir))
-            else:
-                return set()
+        chunks_dir = os.path.join(self.path, 'meta', 'progress')
+        return set(os.listdir(chunks_dir)) if os.path.exists(chunks_dir) else set()
 
     def list_active_runs(self) -> List[str]:
         return list(self._active_run_hashes())
 
     def total_runs_count(self) -> int:
-        db = self.structured_db
-        if db:
-            cache = db.caches.get('runs_cache')
-        else:
-            cache = None
+        cache = db.caches.get('runs_cache') if (db := self.structured_db) else None
         if cache:
             return len(cache.keys())
-        else:
-            self.meta_tree.preload()
-            return len(list(self.meta_tree.subtree('chunks').keys()))
+        self.meta_tree.preload()
+        return len(list(self.meta_tree.subtree('chunks').keys()))
 
     def get_run(self, run_hash: str) -> Optional['Run']:
         """Get run if exists.
@@ -513,10 +520,7 @@ class Repo:
                 logger.warning(f'Error while trying to delete run \'{run_hash}\'. {str(e)}.')
                 remaining_runs.append(run_hash)
 
-        if remaining_runs:
-            return False, remaining_runs
-        else:
-            return True, []
+        return (False, remaining_runs) if remaining_runs else (True, [])
 
     def copy_runs(self, run_hashes: List[str], dest_repo: 'Repo') -> Tuple[bool, List[str]]:
         """Copy multiple Runs data from current aim repository to destination aim repository
@@ -537,10 +541,7 @@ class Repo:
                 logger.warning(f'Error while trying to copy run \'{run_hash}\'. {str(e)}.')
                 remaining_runs.append(run_hash)
 
-        if remaining_runs:
-            return False, remaining_runs
-        else:
-            return True, []
+        return (False, remaining_runs) if remaining_runs else (True, [])
 
     def move_runs(self, run_hashes: List[str], dest_repo: 'Repo') -> Tuple[bool, List[str]]:
         """Move multiple Runs data from current aim repository to destination aim repository
@@ -562,10 +563,7 @@ class Repo:
                 logger.warning(f'Error while trying to move run \'{run_hash}\'. {str(e)}.')
                 remaining_runs.append(run_hash)
 
-        if remaining_runs:
-            return False, remaining_runs
-        else:
-            return True, []
+        return (False, remaining_runs) if remaining_runs else (True, [])
 
     def query_metrics(self,
                       query: str = '',

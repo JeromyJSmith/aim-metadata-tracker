@@ -29,7 +29,7 @@ class StatDict(object):
         elif mode == cls.AGG_MODE_DIFF:
             return round10e5(max(items) - min(items))
         else:
-            raise ValueError('unknown aggregation mode: \'{}\''.format(mode))
+            raise ValueError(f"unknown aggregation mode: \'{mode}\'")
 
     @classmethod
     def aggregate_items(cls,
@@ -68,9 +68,9 @@ class StatDict(object):
                                                       agg_mode)
 
         # Aggregate GPU device stats
-        for g in range(len(gpu_stats)):
-            for k in gpu_stats[g].keys():
-                gpu_stats[g][k] = cls.aggregate(gpu_stats[g][k], agg_mode)
+        for gpu_stat_ in gpu_stats:
+            for k in gpu_stat_.keys():
+                gpu_stat_[k] = cls.aggregate(gpu_stat_[k], agg_mode)
         aggregated_stat.gpu = gpu_stats
 
         return aggregated_stat
@@ -148,7 +148,7 @@ class Stat(object):
             nvml.nvmlInit()
             gpu_device_count = nvml.nvmlDeviceGetCount()
             for i in range(gpu_device_count):
-                gpu_info = dict()
+                gpu_info = {}
                 handle = nvml.nvmlDeviceGetHandleByIndex(i)
                 try:
                     util = nvml.nvmlDeviceGetUtilizationRates(handle)

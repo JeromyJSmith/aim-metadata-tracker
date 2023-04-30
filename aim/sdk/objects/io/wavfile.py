@@ -340,40 +340,36 @@ def _read_fmt_chunk(fid, is_big_endian):
     -----
     Assumes file pointer is immediately after the 'fmt ' id
     """
-    if is_big_endian:
-        fmt = ">"
-    else:
-        fmt = "<"
-
-    size = struct.unpack(fmt + "I", fid.read(4))[0]
+    fmt = ">" if is_big_endian else "<"
+    size = struct.unpack(f"{fmt}I", fid.read(4))[0]
 
     if size < 16:
         raise ValueError("Binary structure of wave file is not compliant")
 
-    res = struct.unpack(fmt + "HHIIHH", fid.read(16))
+    res = struct.unpack(f"{fmt}HHIIHH", fid.read(16))
     bytes_read = 16
 
     format_tag, channels, fs, bytes_per_second, block_align, bit_depth = res
 
     if format_tag == WAVE_FORMAT.EXTENSIBLE and size >= (16 + 2):
-        ext_chunk_size = struct.unpack(fmt + "H", fid.read(2))[0]
+        ext_chunk_size = struct.unpack(f"{fmt}H", fid.read(2))[0]
         bytes_read += 2
-        if ext_chunk_size >= 22:
-            extensible_chunk_data = fid.read(22)
-            bytes_read += 22
-            raw_guid = extensible_chunk_data[(2 + 4):(2 + 4 + 16)]
+        if ext_chunk_size < 22:
+            raise ValueError("Binary structure of wave file is not compliant")
+
+        extensible_chunk_data = fid.read(22)
+        bytes_read += 22
+        raw_guid = extensible_chunk_data[(2 + 4):(2 + 4 + 16)]
             # GUID template {XXXXXXXX-0000-0010-8000-00AA00389B71} (RFC-2361)
             # MS GUID byte order: first three groups are native byte order,
             # rest is Big Endian
-            if is_big_endian:
-                tail = b"\x00\x00\x00\x10\x80\x00\x00\xAA\x00\x38\x9B\x71"
-            else:
-                tail = b"\x00\x00\x10\x00\x80\x00\x00\xAA\x00\x38\x9B\x71"
-            if raw_guid.endswith(tail):
-                format_tag = struct.unpack(fmt + "I", raw_guid[:4])[0]
-        else:
-            raise ValueError("Binary structure of wave file is not compliant")
-
+        tail = (
+            b"\x00\x00\x00\x10\x80\x00\x00\xAA\x00\x38\x9B\x71"
+            if is_big_endian
+            else b"\x00\x00\x10\x00\x80\x00\x00\xAA\x00\x38\x9B\x71"
+        )
+        if raw_guid.endswith(tail):
+            format_tag = struct.unpack(f"{fmt}I", raw_guid[:4])[0]
     if format_tag not in KNOWN_WAVE_FORMATS:
         _raise_bad_format(format_tag)
 
@@ -384,15 +380,14 @@ def _read_fmt_chunk(fid, is_big_endian):
     # fmt should always be 16, 18 or 40, but handle it just in case
     _handle_pad_byte(fid, size)
 
-    if format_tag == WAVE_FORMAT.PCM:
-        if bytes_per_second != fs * block_align:
-            raise ValueError(
-                "WAV header is invalid: nAvgBytesPerSec must"
-                " equal product of nSamplesPerSec and"
-                " nBlockAlign, but file has nSamplesPerSec ="
-                f" {fs}, nBlockAlign = {block_align}, and"
-                f" nAvgBytesPerSec = {bytes_per_second}"
-            )
+    if format_tag == WAVE_FORMAT.PCM and bytes_per_second != fs * block_align:
+        raise ValueError(
+            "WAV header is invalid: nAvgBytesPerSec must"
+            " equal product of nSamplesPerSec and"
+            " nBlockAlign, but file has nSamplesPerSec ="
+            f" {fs}, nBlockAlign = {block_align}, and"
+            f" nAvgBytesPerSec = {bytes_per_second}"
+        )
 
     return (size, format_tag, channels, fs, bytes_per_second, block_align, bit_depth)
 
@@ -424,13 +419,9 @@ def _read_data_chunk(
 
         nChannels = 2, nBlockAlign = 8, wBitsPerSample = 20
     """
-    if is_big_endian:
-        fmt = ">"
-    else:
-        fmt = "<"
-
+    fmt = ">" if is_big_endian else "<"
     # Size of the data subchunk in bytes
-    size = struct.unpack(fmt + "I", fid.read(4))[0]
+    size = struct.unpack(f"{fmt}I", fid.read(4))[0]
 
     # Number of bytes per sample (sample container size)
     bytes_per_sample = block_align // channels
@@ -481,18 +472,17 @@ def _read_data_chunk(
             else:
                 a[:, -bytes_per_sample:] = data.reshape((-1, bytes_per_sample))
             data = a.view(dt).reshape(a.shape[:-1])
+    elif bytes_per_sample in {1, 2, 4, 8}:
+        start = fid.tell()
+        data = numpy.memmap(
+            fid, dtype=dtype, mode="c", offset=start, shape=(n_samples,)
+        )
+        fid.seek(start + size)
     else:
-        if bytes_per_sample in {1, 2, 4, 8}:
-            start = fid.tell()
-            data = numpy.memmap(
-                fid, dtype=dtype, mode="c", offset=start, shape=(n_samples,)
-            )
-            fid.seek(start + size)
-        else:
-            raise ValueError(
-                "mmap=True not compatible with "
-                f"{bytes_per_sample}-byte container size."
-            )
+        raise ValueError(
+            "mmap=True not compatible with "
+            f"{bytes_per_sample}-byte container size."
+        )
 
     _handle_pad_byte(fid, size)
 
@@ -502,17 +492,8 @@ def _read_data_chunk(
 
 
 def _skip_unknown_chunk(fid, is_big_endian):
-    if is_big_endian:
-        fmt = ">I"
-    else:
-        fmt = "<I"
-
-    data = fid.read(4)
-    # call unpack() and seek() only if we have really read data from file
-    # otherwise empty read at the end of the file would trigger
-    # unnecessary exception at unpack() call
-    # in case data equals somehow to 0, there is no need for seek() anyway
-    if data:
+    fmt = ">I" if is_big_endian else "<I"
+    if data := fid.read(4):
         size = struct.unpack(fmt, data)[0]
         fid.seek(size, 1)
         _handle_pad_byte(fid, size)
@@ -566,24 +547,23 @@ def read(buffer, mmap=False):
             chunk_id = fid.read(4)
 
             if not chunk_id:
-                if data_chunk_received:
-                    # End of file but data successfully read
-                    warnings.warn(
-                        "Reached EOF prematurely; finished at {:d} bytes, "
-                        "expected {:d} bytes from header.".format(
-                            fid.tell(), file_size
-                        ),
-                        WavFileWarning,
-                        stacklevel=2,
-                    )
-                    break
-                else:
+                if not data_chunk_received:
                     raise ValueError("Unexpected end of file.")
+                # End of file but data successfully read
+                warnings.warn(
+                    "Reached EOF prematurely; finished at {:d} bytes, "
+                    "expected {:d} bytes from header.".format(
+                        fid.tell(), file_size
+                    ),
+                    WavFileWarning,
+                    stacklevel=2,
+                )
+                break
             elif len(chunk_id) < 4:
                 msg = f"Incomplete chunk ID: {repr(chunk_id)}"
                 # If we have the data, ignore the broken chunk
                 if fmt_chunk_received and data_chunk_received:
-                    warnings.warn(msg + ", ignoring it.", WavFileWarning, stacklevel=2)
+                    warnings.warn(f"{msg}, ignoring it.", WavFileWarning, stacklevel=2)
                 else:
                     raise ValueError(msg)
 
@@ -637,10 +617,12 @@ def write(rate, data):
 
     try:
         dkind = data.dtype.kind
-        if not (
-            dkind == "i" or dkind == "f" or (dkind == "u" and data.dtype.itemsize == 1)
+        if (
+            dkind != "i"
+            and dkind != "f"
+            and (dkind != "u" or data.dtype.itemsize != 1)
         ):
-            raise ValueError("Unsupported data type '%s'" % data.dtype)
+            raise ValueError(f"Unsupported data type '{data.dtype}'")
 
         header_data = b""
 
@@ -650,18 +632,12 @@ def write(rate, data):
 
         # fmt chunk
         header_data += b"fmt "
-        if dkind == "f":
-            format_tag = WAVE_FORMAT.IEEE_FLOAT
-        else:
-            format_tag = WAVE_FORMAT.PCM
-        if data.ndim == 1:
-            channels = 1
-        else:
-            channels = data.shape[1]
+        channels = 1 if data.ndim == 1 else data.shape[1]
         bit_depth = data.dtype.itemsize * 8
         bytes_per_second = fs * (bit_depth // 8) * channels
         block_align = channels * (bit_depth // 8)
 
+        format_tag = WAVE_FORMAT.IEEE_FLOAT if dkind == "f" else WAVE_FORMAT.PCM
         fmt_chunk_data = struct.pack(
             "<HHIIHH",
             format_tag,
@@ -671,7 +647,7 @@ def write(rate, data):
             block_align,
             bit_depth,
         )
-        if not (dkind == "i" or dkind == "u"):
+        if dkind not in ["i", "u"]:
             # add cbSize field for non-PCM files
             fmt_chunk_data += b"\x00\x00"
 
@@ -679,7 +655,7 @@ def write(rate, data):
         header_data += fmt_chunk_data
 
         # fact chunk (non-PCM files)
-        if not (dkind == "i" or dkind == "u"):
+        if dkind not in ["i", "u"]:
             header_data += b"fact"
             header_data += struct.pack("<II", 4, data.shape[0])
 

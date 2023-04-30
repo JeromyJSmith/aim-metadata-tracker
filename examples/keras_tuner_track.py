@@ -8,14 +8,14 @@ def build_model(hp):
     inputs = tf.keras.Input(shape=(32, 32, 3))
     x = inputs
     for i in range(hp.Int('conv_blocks', 3, 5, default=3)):
-        filters = hp.Int('filters_' + str(i), 32, 256, step=32)
+        filters = hp.Int(f'filters_{str(i)}', 32, 256, step=32)
         for _ in range(2):
             x = tf.keras.layers.Convolution2D(
                 filters, kernel_size=(3, 3), padding='same'
             )(x)
             x = tf.keras.layers.BatchNormalization()(x)
             x = tf.keras.layers.ReLU()(x)
-        if hp.Choice('pooling_' + str(i), ['avg', 'max']) == 'max':
+        if hp.Choice(f'pooling_{str(i)}', ['avg', 'max']) == 'max':
             x = tf.keras.layers.MaxPool2D()(x)
         else:
             x = tf.keras.layers.AvgPool2D()(x)

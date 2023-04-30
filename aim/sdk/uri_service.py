@@ -23,7 +23,7 @@ class URIService:
 
     def __init__(self, repo: 'Repo'):
         self.repo = repo
-        self.container_persistent_pool = dict()
+        self.container_persistent_pool = {}
 
     @classmethod
     def generate_uri(cls, repo: 'Repo', run_name: str, sub_name: str, resource_path: str = None) -> str:

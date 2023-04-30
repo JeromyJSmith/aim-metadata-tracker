@@ -11,8 +11,7 @@ class TestIterativeAccessExecutionTime(StorageTestBase):
         repo = Repo.default_repo()
         query = 'metric.name == "metric 0"'
         execution_time = iterative_access_metric_values(repo, query)
-        baseline = get_baseline(test_name)
-        if baseline:
+        if baseline := get_baseline(test_name):
             self.assertInRange(execution_time, baseline)
         else:
             write_baseline(test_name, execution_time)

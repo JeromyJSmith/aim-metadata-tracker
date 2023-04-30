@@ -58,12 +58,7 @@ class ProxyTree(TreeView):
         path: Union[AimObjectKey, AimObjectPath],
         resolve: bool = False
     ):
-        if resolve:
-            return None
-        # TODO [AT, MV] handle resolve=True
-        # make an rpc call to get underlying object type
-        # and construct CustomObject if needed
-        return SubtreeView(self, path)
+        return None if resolve else SubtreeView(self, path)
 
     def make_array(
         self,

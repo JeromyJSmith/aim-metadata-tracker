@@ -55,13 +55,11 @@ class ContainerAutoClean(AutoClean['Container']):
         self._tree[KeyNames.INFO_PREFIX, 'end_time'] = utc_timestamp()
 
     def _wait_for_empty_queue(self):
-        queue = self.storage.task_queue(self.hash)
-        if queue:
+        if queue := self.storage.task_queue(self.hash):
             queue.wait_for_finish()
 
     def _stop_queue(self):
-        queue = self.storage.task_queue(self.hash)
-        if queue:
+        if queue := self.storage.task_queue(self.hash):
             queue.stop()
             self.storage.remove_queue(self.hash)
 
@@ -111,15 +109,14 @@ class Container(ABCContainer):
         self.storage = repo.storage_engine
 
         if hash_ is None:
-            if not self._is_readonly:
+            if self._is_readonly:
+                raise MissingContainerError(hash_, mode)
+            else:
                 self.hash = generate_hash()
-            else:
-                raise MissingContainerError(hash_, mode)
+        elif hash_ in self.storage.container_hashes():
+            self.hash = hash_
         else:
-            if hash_ in self.storage.container_hashes():
-                self.hash = hash_
-            else:
-                raise MissingContainerError(hash_, mode)
+            raise MissingContainerError(hash_, mode)
 
         self._resources: Optional[ContainerAutoClean] = None
         self._hash = self._calc_hash()

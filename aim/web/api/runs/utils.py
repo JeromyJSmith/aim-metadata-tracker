@@ -39,11 +39,10 @@ def get_run_or_404(run_id, repo=None):
     if repo is None:
         repo = get_project_repo()
 
-    run = repo.get_run(run_id)
-    if not run:
+    if run := repo.get_run(run_id):
+        return run
+    else:
         raise HTTPException(status_code=404, detail="Run not found.")
-
-    return run
 
 
 def str_to_range(range_str: str):
@@ -133,12 +132,13 @@ def collect_x_axis_data(x_trace: Metric, iters: np.ndarray) -> Tuple[Optional[di
             x_axis_iters.append(step_index_fn(idx.item()))
             x_axis_values.append(x_val)
 
-    if not x_axis_iters:
-        return None, None
-
     return (
-        numpy_to_encodable(np.array(x_axis_iters, dtype='float64')),
-        numpy_to_encodable(np.array(x_axis_values, dtype='float64'))
+        (
+            numpy_to_encodable(np.array(x_axis_iters, dtype='float64')),
+            numpy_to_encodable(np.array(x_axis_values, dtype='float64')),
+        )
+        if x_axis_iters
+        else (None, None)
     )
 
 

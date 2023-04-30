@@ -106,9 +106,7 @@ async def update_pinned_metrics_api(request_data: ProjectPinnedSequencesApiIn):
     settings_lock_file = f'{settings_filename}.lock'
     settings = {}
     with AutoFileLock(settings_lock_file, timeout=2):
-        mode = 'r+'
-        if not os.path.exists(settings_filename):
-            mode = 'w+'
+        mode = 'r+' if os.path.exists(settings_filename) else 'w+'
         with open(settings_filename, mode) as settings_file:
             try:
                 settings = json.load(settings_file)

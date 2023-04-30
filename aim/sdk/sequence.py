@@ -24,7 +24,7 @@ T = TypeVar('T')
 
 class SequenceData:
     def __init__(self, series_tree, version: int, columns: List[Tuple[str, str]]):
-        if len(columns) == 0:
+        if not columns:
             raise ValueError('Cannot create SequenceData. Please specify at least one column.')
 
         self.series_tree = series_tree
@@ -32,7 +32,7 @@ class SequenceData:
         self.columns = columns
         self.arrays: Tuple[ArrayView] = tuple(self._get_array(col, dtype) for col, dtype in columns)
 
-        self._dtype_map = {col: dtype for col, dtype in columns}
+        self._dtype_map = dict(columns)
         self._step_hash_fn = STEP_HASH_FUNCTIONS[self.version]
 
     def step_hash(self, step):
@@ -82,9 +82,10 @@ class SequenceData:
     def numpy(self) -> Tuple[np.ndarray, List[np.ndarray]]:
         # default implementation
         steps, vals_list = self.items_list()
-        numpy_list = []
-        for col_idx, vals in enumerate(vals_list):
-            numpy_list.append(np.array(vals, dtype=self.arrays[col_idx].dtype))
+        numpy_list = [
+            np.array(vals, dtype=self.arrays[col_idx].dtype)
+            for col_idx, vals in enumerate(vals_list)
+        ]
         return np.array(steps, np.intp), numpy_list
 
 
@@ -149,8 +150,7 @@ class SequenceV1Data(SequenceData):
 
     def _get_iters(self) -> List[Iterator[Any]]:
         iters = [self.arrays[0].items()]
-        for arr in self.arrays[1:]:
-            iters.append(arr.values())
+        iters.extend(arr.values() for arr in self.arrays[1:])
         return iters
 
 
@@ -205,8 +205,7 @@ class SequenceV2Data(SequenceData):
             # If such case occurs, we fall back to the series tree for the last step.
             last_steps = []
             try:
-                for i in range(len(columns)):
-                    last_steps.append(self.arrays[i][step_hash])
+                last_steps.extend(self.arrays[i][step_hash] for i in range(len(columns)))
             except KeyError:
                 logger.debug('Last step not found in reservoir.')
             else:

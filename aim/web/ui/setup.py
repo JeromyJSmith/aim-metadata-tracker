@@ -17,8 +17,7 @@ VERSION = __version__
 def package_files(directory):
     paths = []
     for (path, _, filenames) in os.walk(directory):
-        for filename in filenames:
-            paths.append(os.path.join('..', path, filename))
+        paths.extend(os.path.join('..', path, filename) for filename in filenames)
     return paths
 
 

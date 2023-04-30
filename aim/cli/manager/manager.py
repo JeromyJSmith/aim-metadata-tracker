@@ -28,11 +28,10 @@ class ManagerActionResult:
 
 def run_up(args):
     args_list = ['--log-level=error']
-    for p in args.keys():
-        if p != '--proxy-url':
-            args_list.append(p + '=' + args[p])
-
-    success_msg = 'Open http://{}:{}{}'.format(args['--host'], args['--port'], args['--base-path'])
+    args_list.extend(f'{p}={args[p]}' for p in args.keys() if p != '--proxy-url')
+    success_msg = (
+        f"Open http://{args['--host']}:{args['--port']}{args['--base-path']}"
+    )
 
     child_process = subprocess.Popen(
         ['aim', UP_NAME] + args_list + ['--force-init'],
@@ -47,28 +46,24 @@ def run_up(args):
 
     time.sleep(2)
     for line in child_process.stderr:
-        # @TODO improve this solution
-        #  The child process `aim cli` has an incompatible things inside
-        #  that's the reason to find this way to get result from the process
         if ERROR_MSG_PREFIX in line.decode():
             return ManagerActionResult(
                 ManagerActionStatuses.Failed,
                 {'message': line.decode()}
             )
+        if success_msg in line.decode():
+            return ManagerActionResult(
+                ManagerActionStatuses.Succeed,
+                info
+            )
         else:
-            if success_msg in line.decode():
-                return ManagerActionResult(
-                    ManagerActionStatuses.Succeed,
-                    info
-                )
-            else:
-                return ManagerActionResult(
-                    ManagerActionStatuses.Failed,
-                    {
-                        'message': '\nPerhaps this is a bug from aim side.'
-                                   '\nPlease open an issue https://github.com/aimhubio/aim/issues.'
-                    }
-                )
+            return ManagerActionResult(
+                ManagerActionStatuses.Failed,
+                {
+                    'message': '\nPerhaps this is a bug from aim side.'
+                               '\nPlease open an issue https://github.com/aimhubio/aim/issues.'
+                }
+            )
 
 
 def run_version(args):

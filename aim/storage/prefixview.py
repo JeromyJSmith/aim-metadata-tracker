@@ -76,9 +76,7 @@ class PrefixView(Container):
         having all the paths end with the sentinel:
         `join('a/b/c/', 'e/f/') == 'a/b/c/' + 'e/f/' = 'a/b/c/e/f/'`
         """
-        if path is None:
-            return self.prefix
-        return self.prefix + path
+        return self.prefix if path is None else self.prefix + path
 
     def get(
         self,
@@ -214,10 +212,7 @@ class PrefixView(Container):
         walker = self.parent.walk(path)
         p = None
         while True:
-            if p is None:
-                next_key = next(walker)
-            else:
-                next_key = walker.send(p)
+            next_key = next(walker) if p is None else walker.send(p)
             if next_key is None:
                 return
             if path:

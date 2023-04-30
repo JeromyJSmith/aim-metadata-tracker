@@ -85,10 +85,12 @@ class BaseRun:
         v1_metric_found = False
         for ctx_metadata in traces_tree.values():
             for seq_metadata in ctx_metadata.values():
-                if seq_metadata.get('dtype', 'float') in metric_dtypes:
-                    if seq_metadata.get('version', 1) == 1:
-                        v1_metric_found = True
-                        break
+                if (
+                    seq_metadata.get('dtype', 'float') in metric_dtypes
+                    and seq_metadata.get('version', 1) == 1
+                ):
+                    v1_metric_found = True
+                    break
         return v1_metric_found
 
     def update_metrics(self):

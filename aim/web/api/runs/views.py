@@ -256,19 +256,18 @@ async def remove_run_tag_api(run_id: str, tag_id: str, factory=Depends(object_fa
 @runs_router.delete('/{run_id}/')
 async def delete_run_api(run_id: str):
     repo = get_project_repo()
-    success = repo.delete_run(run_id)
-    if not success:
+    if success := repo.delete_run(run_id):
+        return {
+            'id': run_id,
+            'status': 'OK'
+        }
+    else:
         raise HTTPException(status_code=400, detail={
             'message': 'Error while deleting run.',
             'detail': {
                 'Run id': run_id
             }
         })
-
-    return {
-        'id': run_id,
-        'status': 'OK'
-    }
 
 
 @runs_router.post('/delete-batch/')
@@ -309,11 +308,11 @@ async def archive_runs_batch_api(runs_batch: RunsBatchIn, archive: Optional[bool
 @runs_router.get('/{run_id}/note/')
 def list_note_api(run_id, factory=Depends(object_factory)):
     with factory:
-        run = factory.find_run(run_id)
-        if not run:
-            raise HTTPException(status_code=404)
+        if run := factory.find_run(run_id):
+            notes = run.notes
 
-        notes = run.notes
+        else:
+            raise HTTPException(status_code=404)
 
     return notes
 
@@ -380,11 +379,11 @@ def delete_note_api(run_id, _id: int, factory=Depends(object_factory)):
         if not run:
             raise HTTPException(status_code=404)
 
-        note = run.find_note(_id=_id)
-        if not note:
-            raise HTTPException(status_code=404, detail=NOTE_NOT_FOUND.format(id=_id))
+        if note := run.find_note(_id=_id):
+            run.remove_note(_id)
 
-        run.remove_note(_id)
+        else:
+            raise HTTPException(status_code=404, detail=NOTE_NOT_FOUND.format(id=_id))
 
     return {
         'status': 'OK'

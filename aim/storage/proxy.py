@@ -82,8 +82,7 @@ class Eager1:
             return attr
 
         try:
-            item = w[self.name]
-            return item
+            return w[self.name]
         except KeyError:
             pass
 
@@ -140,8 +139,7 @@ class Eager3:
         w = self.wrapped()
 
         try:
-            item = w[self.key]
-            return item
+            return w[self.key]
         except KeyError:
             pass
 

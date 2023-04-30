@@ -18,7 +18,7 @@ class TestRunResourceTracker(TestBase):
                                                report_mode=QueryReportMode.DISABLED))
         expected_metrics = {'__system__cpu', '__system__disk_percent',
                             '__system__memory_percent', '__system__p_memory_percent'}
-        metric_names = set(m.name for m in metrics)
+        metric_names = {m.name for m in metrics}
         for name in expected_metrics:
             self.assertIn(name, metric_names)
 
@@ -33,7 +33,7 @@ class TestRunResourceTracker(TestBase):
                                                report_mode=QueryReportMode.DISABLED))
         expected_metrics = {'__system__cpu', '__system__disk_percent',
                             '__system__memory_percent', '__system__p_memory_percent'}
-        metric_names = set(m.name for m in metrics)
+        metric_names = {m.name for m in metrics}
         for name in expected_metrics:
             self.assertIn(name, metric_names)
         for metric in metrics:

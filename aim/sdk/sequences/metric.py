@@ -78,11 +78,7 @@ class Metric(Sequence):
                                                    depth=3):
                 s = 'run'
                 for key in path:
-                    if isinstance(key, str):
-                        s += f'.{key}'
-                    else:
-                        s += f'[{key}]'
-
+                    s += f'.{key}' if isinstance(key, str) else f'[{key}]'
                 if isinstance(val, (tuple, list, dict)):
                     val = json.dumps(val)
                 data[s] = [val for _ in indices]
@@ -94,10 +90,7 @@ class Metric(Sequence):
                                                    depth=3):
                 s = 'metric.context'
                 for key in path:
-                    if isinstance(key, str):
-                        s += f'.{key}'
-                    else:
-                        s += f'[{key}]'
+                    s += f'.{key}' if isinstance(key, str) else f'[{key}]'
                 # path = '.'.join(path)
                 if isinstance(val, (tuple, list)):
                     val = json.dumps(val)
@@ -105,5 +98,4 @@ class Metric(Sequence):
                 data[s] = [val for _ in indices]
 
         import pandas as pd
-        df = pd.DataFrame(data)
-        return df
+        return pd.DataFrame(data)

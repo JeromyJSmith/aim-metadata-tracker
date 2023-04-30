@@ -141,14 +141,11 @@ def AutoFileLock(
         A timeout of 0 means, that there is exactly one attempt to acquire the
         file lock.
     """
-    if not FileSystemInspector.needs_soft_lock(lock_file):
-        return UnixFileLock(lock_file, timeout)
-    else:
-        # Cleaning lock files is not required by `FileLock`. The leftover lock files
-        # (potentially from previous versions) could be interpreted as *acquired*
-        # locks by `SoftFileLock` causing a deadlock.
-        # To prevent this, we add a suffix to the lock file name.
-        return SoftFileLock(f'{lock_file}.softlock', timeout)
+    return (
+        SoftFileLock(f'{lock_file}.softlock', timeout)
+        if FileSystemInspector.needs_soft_lock(lock_file)
+        else UnixFileLock(lock_file, timeout)
+    )
 
 
 class DualLock:

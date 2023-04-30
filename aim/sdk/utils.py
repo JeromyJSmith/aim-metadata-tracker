@@ -70,9 +70,7 @@ def get_object_typename(obj) -> str:
             return 'list'
         element_typename = get_object_typename(obj[0])
         return f'list({element_typename})'
-    if isinstance(obj, CustomObject):
-        return obj.get_typename()
-    return 'unknown'
+    return obj.get_typename() if isinstance(obj, CustomObject) else 'unknown'
 
 
 any_list_regex = re.compile(r'list\([A-Za-z]{1}[A-Za-z0-9.]*\)')
@@ -94,9 +92,7 @@ def check_types_compatibility(
         if update_base_dtype_fn is not None:
             update_base_dtype_fn(base_dtype, dtype)
         return True
-    if dtype == 'list' and any_list_regex.match(base_dtype):
-        return True
-    return False
+    return bool(dtype == 'list' and any_list_regex.match(base_dtype))
 
 
 @contextmanager

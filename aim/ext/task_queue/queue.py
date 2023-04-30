@@ -19,7 +19,7 @@ class TaskQueue(object):
         self._stopped = False
         atexit.register(self.stop_workers)
 
-        for thread_num in range(self.num_workers):
+        for _ in range(self.num_workers):
             thread = threading.Thread(target=self.worker)
             thread.daemon = True
             self._threads.append(thread)
@@ -52,8 +52,7 @@ class TaskQueue(object):
             return
 
         self._stopped = True
-        pending_task_count = self._queue.qsize()
-        if pending_task_count:
+        if pending_task_count := self._queue.qsize():
             logger.warning(f'Processing {pending_task_count} pending tasks in queue \'{self.name}\'... '
                            f'Please do not kill the process.')
             self._queue.join()

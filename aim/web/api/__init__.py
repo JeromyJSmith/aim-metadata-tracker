@@ -20,11 +20,7 @@ async def http_exception_handler(request, exc):
         message = exc.detail.pop('message', message)
         detail = exc.detail.pop('detail', None)
 
-    response = {'message': message}
-    if detail:
-        response.update({'detail': detail})
-    else:
-        response.update({'detail': str(exc)})
+    response = {'message': message, 'detail': detail if detail else str(exc)}
     return JSONResponse(response, status_code=exc.status_code)
 
 

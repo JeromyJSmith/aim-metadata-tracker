@@ -85,8 +85,8 @@ class SequenceQueryProxy:
 
 def construct_query_expression(var_prefix: str, query_: Optional[str] = None, **kwargs) -> str:
     query_exprs = (f'({var_prefix}.{var_} == {json.dumps(value)})' for var_, value in kwargs.items())
-    if query_ is not None:
-        q = ' and '.join(itertools.chain((query_,), query_exprs))
-    else:
-        q = ' and '.join(query_exprs)
-    return q
+    return (
+        ' and '.join(itertools.chain((query_,), query_exprs))
+        if query_ is not None
+        else ' and '.join(query_exprs)
+    )

@@ -20,10 +20,7 @@ def get_username():
         return os.environ.get('LNAME')
     if os.environ.get('USER'):
         return os.environ.get('USER')
-    if os.environ.get('USERNAME'):
-        return os.environ.get('USERNAME')
-
-    return None
+    return os.environ.get('USERNAME') if os.environ.get('USERNAME') else None
 
 
 def check_sshfs_installation():
@@ -137,8 +134,7 @@ def mount_remote_repo(remote_path: str) -> Tuple[str, str]:
     # TODO: experiment on sshfs options to find an optimal set
     # construct sshfs options, use IdentityFile if provided by the user
     sshfs_options = 'default_permissions'
-    identity_file = os.environ.get('AIM_REMOTE_REPO_KEY_FILE')
-    if identity_file:
+    if identity_file := os.environ.get('AIM_REMOTE_REPO_KEY_FILE'):
         sshfs_options = f'{sshfs_options},IdentityFile={identity_file}'
 
     # try mounting using sshfs

@@ -119,10 +119,7 @@ class AimLoggingHandler(
 
     def epoch_begin(self, estimator: Optional[Estimator], *args, **kwargs):
         if isinstance(self.log_interval, int) or self.log_interval == 'epoch':
-            is_training = False
-            for metric in self.metrics:
-                if 'training' in metric.name:
-                    is_training = True
+            is_training = any('training' in metric.name for metric in self.metrics)
             self.epoch_start = time.time()
             if is_training:
                 estimator.logger.info(
@@ -159,7 +156,7 @@ class AimLoggingHandler(
             batch_time = time.time() - self.batch_start
             msg = '[Epoch %d][Batch %d]' % (self.current_epoch, self.batch_index)
             self.processed_samples += kwargs['batch'][0].shape[0]
-            msg += '[Samples %s] ' % (self.processed_samples)
+            msg += f'[Samples {self.processed_samples}] '
             self.log_interval_time += batch_time
             if self.batch_index % self.log_interval == 0:
                 msg += 'time/interval: %.3fs ' % self.log_interval_time

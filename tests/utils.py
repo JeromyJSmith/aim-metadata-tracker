@@ -111,11 +111,10 @@ def fill_up_test_data(extra_params: dict = None):
                 context = metric_context[1]
                 if metric == 'accuracy' and 'subset' in context:
                     continue
-                else:
-                    # track 100 values per run
-                    for step in range(100):
-                        val = 1.0 - 1.0 / (step + 1)
-                        run.track(val, name=metric, step=step, epoch=1, context=context)
+                # track 100 values per run
+                for step in range(100):
+                    val = 1.0 - 1.0 / (step + 1)
+                    run.track(val, name=metric, step=step, epoch=1, context=context)
         for run in runs:
             run.finalize()
 
@@ -132,6 +131,4 @@ def is_package_installed(pkg_name: str) -> bool:
 
 def full_class_name(cls):
     module = cls.__module__
-    if module == '__builtin__':
-        return cls.__name__  # avoid outputs like '__builtin__.str'
-    return module + '.' + cls.__name__
+    return cls.__name__ if module == '__builtin__' else f'{module}.{cls.__name__}'

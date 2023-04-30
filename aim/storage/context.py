@@ -56,9 +56,7 @@ class Context:
         return self._hash
 
     def __eq__(self, other: 'Context') -> bool:
-        if hash(self) != hash(other):
-            return False
-        return self._context == other._context
+        return False if hash(self) != hash(other) else self._context == other._context
 
 
 def cached_context(func):

@@ -89,11 +89,10 @@ class HealthServicer(health_pb2_grpc.HealthServicer):
         import grpc
         with self._lock:
             status = self._server_status.get(request.service)
-            if status is None:
-                context.set_code(grpc.StatusCode.NOT_FOUND)
-                return health_pb2.HealthCheckResponse()
-            else:
+            if status is not None:
                 return health_pb2.HealthCheckResponse(status=status)
+            context.set_code(grpc.StatusCode.NOT_FOUND)
+            return health_pb2.HealthCheckResponse()
 
     # pylint: disable=arguments-differ
     def Watch(self, request, context, send_response_callback=None):
@@ -130,13 +129,12 @@ class HealthServicer(health_pb2_grpc.HealthServicer):
         with self._lock:
             if self._gracefully_shutting_down:
                 return
-            else:
-                self._server_status[service] = status
-                if service in self._send_response_callbacks:
-                    for send_response_callback in self._send_response_callbacks[
-                            service]:
-                        send_response_callback(
-                            health_pb2.HealthCheckResponse(status=status))
+            self._server_status[service] = status
+            if service in self._send_response_callbacks:
+                for send_response_callback in self._send_response_callbacks[
+                        service]:
+                    send_response_callback(
+                        health_pb2.HealthCheckResponse(status=status))
 
     def enter_graceful_shutdown(self):
         """Permanently sets the status of all services to NOT_SERVING.
@@ -150,8 +148,7 @@ class HealthServicer(health_pb2_grpc.HealthServicer):
         with self._lock:
             if self._gracefully_shutting_down:
                 return
-            else:
-                for service in self._server_status:
-                    self.set(service,
-                             health_pb2.HealthCheckResponse.NOT_SERVING)  # pylint: disable=no-member
-                self._gracefully_shutting_down = True
+            for service in self._server_status:
+                self.set(service,
+                         health_pb2.HealthCheckResponse.NOT_SERVING)  # pylint: disable=no-member
+            self._gracefully_shutting_down = True

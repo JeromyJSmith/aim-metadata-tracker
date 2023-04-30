@@ -273,10 +273,7 @@ class Image(CustomObject):
 
 def convert_to_aim_image_list(images, labels=None) -> List[Image]:
     aim_images = []
-    if labels is not None:
-        labels_it = chain(labels, repeat(''))
-    else:
-        labels_it = repeat('')
+    labels_it = chain(labels, repeat('')) if labels is not None else repeat('')
     for img, lbl in zip(images, labels_it):
         aim_img = Image(img, lbl if isinstance(lbl, str) else str(lbl.item()))
         aim_images.append(aim_img)

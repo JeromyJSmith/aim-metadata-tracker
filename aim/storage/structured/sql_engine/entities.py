@@ -85,16 +85,24 @@ class ModelMappedRun(IRun, metaclass=ModelMappedClassMeta):
 
     @classmethod
     def find(cls, _id: str, **kwargs) -> Union[IRun, SafeNone]:
-        session = kwargs.get('session')
-        if not session:
+        if session := kwargs.get('session'):
+            return (
+                ModelMappedRun.from_model(model_obj, session)
+                if (
+                    model_obj := session.query(RunModel)
+                    .options(
+                        [
+                            joinedload(RunModel.experiment),
+                            joinedload(RunModel.tags),
+                        ]
+                    )
+                    .filter(RunModel.hash == _id)
+                    .first()
+                )
+                else SafeNone()
+            )
+        else:
             return SafeNone()
-        model_obj = session.query(RunModel).options([
-            joinedload(RunModel.experiment),
-            joinedload(RunModel.tags),
-        ]).filter(RunModel.hash == _id).first()
-        if model_obj:
-            return ModelMappedRun.from_model(model_obj, session)
-        return SafeNone()
 
     @classmethod
     def find_many(cls, ids: List[str], **kwargs) -> List[IRun]:
@@ -142,9 +150,7 @@ class ModelMappedRun(IRun, metaclass=ModelMappedClassMeta):
     @property
     def info(self) -> Optional[IRunInfo]:
         if self._model:
-            if self._model.info:
-                return ModelMappedRunInfo(self._model.info, self._session)
-            else:
+            if not self._model.info:
                 info = RunInfoModel()
 
                 self._model.info = info
@@ -152,7 +158,7 @@ class ModelMappedRun(IRun, metaclass=ModelMappedClassMeta):
                 self._session.add(self._model)
                 self._session.flush()
 
-                return ModelMappedRunInfo(self._model.info, self._session)
+            return ModelMappedRunInfo(self._model.info, self._session)
 
     @experiment.setter
     def experiment(self, value: str):
@@ -213,8 +219,9 @@ class ModelMappedRun(IRun, metaclass=ModelMappedClassMeta):
     @property
     def notes_obj(self) -> NoteCollection:
         if self._model:
-            return ModelMappedNoteCollection(self._session,
-                                             collection=[n for n in self._model.notes])
+            return ModelMappedNoteCollection(
+                self._session, collection=list(self._model.notes)
+            )
         else:
             return []
 
@@ -339,15 +346,23 @@ class ModelMappedExperiment(IExperiment, metaclass=ModelMappedClassMeta):
 
     @classmethod
     def find(cls, _id: str, **kwargs) -> Union[IExperiment, SafeNone]:
-        session = kwargs.get('session')
-        if not session:
+        if session := kwargs.get('session'):
+            return (
+                ModelMappedExperiment(model_obj, session)
+                if (
+                    model_obj := session.query(ExperimentModel)
+                    .options(
+                        [
+                            joinedload(ExperimentModel.runs),
+                        ]
+                    )
+                    .filter(ExperimentModel.uuid == _id)
+                    .first()
+                )
+                else SafeNone()
+            )
+        else:
             return SafeNone()
-        model_obj = session.query(ExperimentModel).options([
-            joinedload(ExperimentModel.runs),
-        ]).filter(ExperimentModel.uuid == _id).first()
-        if model_obj:
-            return ModelMappedExperiment(model_obj, session)
-        return SafeNone()
 
     @classmethod
     def all(cls, **kwargs) -> Collection[IExperiment]:
@@ -486,15 +501,23 @@ class ModelMappedTag(ITag, metaclass=ModelMappedClassMeta):
 
     @classmethod
     def find(cls, _id: str, **kwargs) -> Union[ITag, SafeNone]:
-        session = kwargs.get('session')
-        if not session:
+        if session := kwargs.get('session'):
+            return (
+                ModelMappedTag(model_obj, session)
+                if (
+                    model_obj := session.query(TagModel)
+                    .options(
+                        [
+                            joinedload(TagModel.runs),
+                        ]
+                    )
+                    .filter(TagModel.uuid == _id)
+                    .first()
+                )
+                else SafeNone()
+            )
+        else:
             return SafeNone()
-        model_obj = session.query(TagModel).options([
-            joinedload(TagModel.runs),
-        ]).filter(TagModel.uuid == _id).first()
-        if model_obj:
-            return ModelMappedTag(model_obj, session)
-        return SafeNone()
 
     @classmethod
     def all(cls, **kwargs) -> Collection[ITag]:
@@ -522,8 +545,11 @@ class ModelMappedTag(ITag, metaclass=ModelMappedClassMeta):
         session = kwargs.get('session')
         if not session:
             return False
-        model_obj = session.query(TagModel).filter(TagModel.uuid == _id).first()
-        if model_obj:
+        if (
+            model_obj := session.query(TagModel)
+            .filter(TagModel.uuid == _id)
+            .first()
+        ):
             session.delete(model_obj)
             return True
         return False
@@ -560,15 +586,23 @@ class ModelMappedNote(INote, metaclass=ModelMappedClassMeta):
 
     @classmethod
     def find(cls, _id: str, **kwargs) -> Union[INote, SafeNone]:
-        session = kwargs.get('session')
-        if not session:
+        if session := kwargs.get('session'):
+            return (
+                ModelMappedNote(model_obj, session)
+                if (
+                    model_obj := session.query(NoteModel)
+                    .options(
+                        [
+                            joinedload(NoteModel.run),
+                        ]
+                    )
+                    .filter(NoteModel.id == _id)
+                    .first()
+                )
+                else SafeNone()
+            )
+        else:
             return SafeNone()
-        model_obj = session.query(NoteModel).options([
-            joinedload(NoteModel.run),
-        ]).filter(NoteModel.id == _id).first()
-        if model_obj:
-            return ModelMappedNote(model_obj, session)
-        return SafeNone()
 
     @classmethod
     def all(cls, **kwargs) -> Collection[INote]:
@@ -589,8 +623,11 @@ class ModelMappedNote(INote, metaclass=ModelMappedClassMeta):
         session = kwargs.get('session')
         if not session:
             return False
-        model_obj = session.query(NoteModel).filter(NoteModel.id == _id).first()
-        if model_obj:
+        if (
+            model_obj := session.query(NoteModel)
+            .filter(NoteModel.id == _id)
+            .first()
+        ):
             session.delete(model_obj)
             return True
         return False

@@ -29,9 +29,7 @@ class LocalFileManager(FileManager):
 
     def poll(self, pattern: str) -> Optional[str]:
         paths = list(self.base_dir.glob(pattern))
-        if not paths:
-            return None
-        return max(paths).name
+        return max(paths).name if paths else None
 
     def touch(self, filename: str, cleanup_file_pattern: Optional[str] = None):
         self.base_dir.mkdir(parents=True, exist_ok=True)

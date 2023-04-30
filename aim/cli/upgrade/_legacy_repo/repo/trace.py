@@ -15,9 +15,7 @@ class Trace(object):
         self.context = None  # type: Optional[Dict[str, Union[str, Any]]]
         self.hashable_context = None
         if context is not None:
-            self.context = {
-                k: v for (k, v) in context
-            }
+            self.context = dict(context)
             self.hashable_context = tuple(sorted(self.context.items()))
 
     def __repr__(self):
@@ -29,6 +27,4 @@ class Trace(object):
     def read_records(self, indices: Optional[Union[int, Tuple[int, ...],
                                                    slice]] = None):
         storage = self.metric.get_storage()
-        records_iter = storage.read_records(self.name, indices,
-                                            self.context)
-        return records_iter
+        return storage.read_records(self.name, indices, self.context)

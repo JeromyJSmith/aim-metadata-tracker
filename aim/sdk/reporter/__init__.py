@@ -425,9 +425,9 @@ class RunStatusReporter:
         # `True` and inserting the new item with the same `flag_name`.
         # The `timed_tasks` is used to find the older items to set `overwritten`
         self.queue = queue.PriorityQueue()
-        self.last_check_ins: Dict[str, CheckIn] = dict()
-        self.physical_check_ins: Dict[str, CheckIn] = dict()
-        self.timed_tasks: Dict[str, TimedTask] = dict()
+        self.last_check_ins: Dict[str, CheckIn] = {}
+        self.physical_check_ins: Dict[str, CheckIn] = {}
+        self.timed_tasks: Dict[str, TimedTask] = {}
 
         # We always set the first check-in `starting`.
         logger.info(f"starting from: {self.last_check_ins}")
@@ -531,19 +531,18 @@ class RunStatusReporter:
             timed_task = TimedTask(when=0, flag_name=flag_name)
             self._schedule(timed_task)
             logger.debug(f"scheduled {timed_task} ASAP because no physical check-in was found")
-        else:
-            if was_scheduled.when > check_in.expiry_date:
-                # Schedule to flush ASAP
-                timed_task = TimedTask(when=0, flag_name=flag_name)
-                self._schedule(timed_task)
-                # We need to remove the old task from the queue but the queue
-                # implementation does not allow to update the priority of the
-                # existing items, so we need to remove the item and re-insert it
-                # with the new priority. This is done by setting `overwritten`
-                # flag to `True` and inserting the new item with the same
-                # `flag_name`. The writer thread will just ignore such items.
-                was_scheduled.overwritten = True
-                logger.debug(f"scheduled {timed_task} because it newer is stricter than {was_scheduled}")
+        elif was_scheduled.when > check_in.expiry_date:
+            # Schedule to flush ASAP
+            timed_task = TimedTask(when=0, flag_name=flag_name)
+            self._schedule(timed_task)
+            # We need to remove the old task from the queue but the queue
+            # implementation does not allow to update the priority of the
+            # existing items, so we need to remove the item and re-insert it
+            # with the new priority. This is done by setting `overwritten`
+            # flag to `True` and inserting the new item with the same
+            # `flag_name`. The writer thread will just ignore such items.
+            was_scheduled.overwritten = True
+            logger.debug(f"scheduled {timed_task} because it newer is stricter than {was_scheduled}")
 
         return check_in
 
@@ -561,9 +560,8 @@ class RunStatusReporter:
                 raise ValueError(
                     f"{cls.__name__} has {len(cls.instances)} instances, indirect check-in is not supported"
                 )
-            else:
-                logger.warning(f"{cls.__name__} has no instances")
-                return None
+            logger.warning(f"{cls.__name__} has no instances")
+            return None
         return default_instance
 
     def close(self):

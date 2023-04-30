@@ -101,10 +101,7 @@ class TensorboardFolderTracker:
     def _process_tb_event(self, event):
         def create_ndarray(tensor):
             res = tensor_util.make_ndarray(tensor)
-            if res.dtype == "object":
-                return None
-            else:
-                return res
+            return None if res.dtype == "object" else res
 
         step = event.step
         fail_count = 0
@@ -131,7 +128,7 @@ class TensorboardFolderTracker:
                         track_val = [Image(tf.image.decode_image(t).numpy()) for t in tensor]
                         if len(track_val) == 1:
                             track_val = track_val[0]
-                    elif plugin_name == "scalars" or plugin_name == "":
+                    elif plugin_name in ["scalars", ""]:
                         track_val = create_ndarray(value.tensor)
                     else:
                         track_val = value.tensor.float_val[0]
@@ -183,8 +180,7 @@ class TensorboardEventConsumer:
     def _process_events(self):
         while True:
             try:
-                event = self._queue.get(True, 1)
-                if event:
+                if event := self._queue.get(True, 1):
                     self._tracker()(event.value, event.name, event.step, context=event.context)
             except queue.Empty:
                 event = None

@@ -45,7 +45,7 @@ class TestStructuredRunApi(PrefilledDataApiTestBase):
     def test_add_remove_tag_api(self):
         matching_runs = self.repo.structured_db.search_runs(f'Run number 5 {self.test_id}')
         run = next(iter(matching_runs))
-        tags = [tag for tag in run.tags_obj]
+        tags = list(run.tags_obj)
         self.assertEqual(2, len(run.tags_obj))
 
         self.assertListEqual([f'first runs {self.test_id}', f'last runs {self.test_id}'], run.tags)

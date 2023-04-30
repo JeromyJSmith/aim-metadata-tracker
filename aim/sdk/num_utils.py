@@ -14,8 +14,8 @@ def get_inst_type_str(inst):
         if hasattr(inst.__class__, '__module__'):
             obj_cls_module = inst.__class__.__module__
 
-    obj_full = '{}.{}'.format(obj_name, obj_module)
-    obj_cls_full = '{}.{}'.format(obj_cls_name, obj_cls_module)
+    obj_full = f'{obj_name}.{obj_module}'
+    obj_cls_full = f'{obj_cls_name}.{obj_cls_module}'
 
     return obj_full, obj_cls_full
 
@@ -27,8 +27,7 @@ def get_inst_base_types(inst):
     bases_types = []
     for b in inst.__class__.__bases__:
         b_type, b_cls_type = get_inst_type_str(b)
-        bases_types.append(b_type)
-        bases_types.append(b_cls_type)
+        bases_types.extend((b_type, b_cls_type))
     return bases_types
 
 
@@ -41,11 +40,7 @@ def inst_has_typename(inst, types):
     inst_types = [inst_type, inst_cls_type] + get_inst_base_types(inst)
 
     for i in inst_types:
-        found = True
-        for t in types:
-            if i.find(t) == -1:
-                found = False
-                break
+        found = all(i.find(t) != -1 for t in types)
         if found:
             return True
 
@@ -69,9 +64,9 @@ def is_jax_device_array(inst):
     """
     if inst_has_typename(inst, ['jaxlib', 'xla_extension', 'Array']):
         return True
-    if inst_has_typename(inst, ['jaxlib', 'xla_extension', 'DeviceArray']):
-        return True
-    return False
+    return bool(
+        inst_has_typename(inst, ['jaxlib', 'xla_extension', 'DeviceArray'])
+    )
 
 
 def is_numpy_array(inst):
@@ -109,13 +104,7 @@ def is_number(value):
     if is_jax_device_array(value):
         return True
 
-    if is_pytorch_tensor(value):
-        return True
-
-    if is_tf_tensor(value):
-        return True
-
-    return False
+    return True if is_pytorch_tensor(value) else bool(is_tf_tensor(value))
 
 
 def convert_to_py_number(value) -> object:

@@ -64,11 +64,10 @@ class RPCServer:
     @staticmethod
     def _get_grpc_server_options():
         msg_max_size = int(os.getenv(AIM_RT_MAX_MESSAGE_SIZE, AIM_RT_DEFAULT_MAX_MESSAGE_SIZE))
-        options = [
+        return [
             ('grpc.max_send_message_length', msg_max_size),
-            ('grpc.max_receive_message_length', msg_max_size)
+            ('grpc.max_receive_message_length', msg_max_size),
         ]
-        return options
 
     @property
     def server(self):

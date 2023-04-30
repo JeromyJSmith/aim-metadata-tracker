@@ -61,19 +61,17 @@ async def create_experiment_api(exp_in: ExperimentCreateIn, factory=Depends(obje
 
 @experiment_router.get('/{exp_id}/', response_model=ExperimentGetOut)
 async def get_experiment_api(exp_id: str, factory=Depends(object_factory)):
-    exp = factory.find_experiment(exp_id)
-    if not exp:
+    if exp := factory.find_experiment(exp_id):
+        return {
+            'id': exp.uuid,
+            'name': exp.name,
+            'description': exp.description,
+            'archived': exp.archived,
+            'run_count': len(exp.runs),
+            'creation_time': exp.creation_time,
+        }
+    else:
         raise HTTPException(status_code=404)
-
-    response = {
-        'id': exp.uuid,
-        'name': exp.name,
-        'description': exp.description,
-        'archived': exp.archived,
-        'run_count': len(exp.runs),
-        'creation_time': exp.creation_time
-    }
-    return response
 
 
 @experiment_router.put('/{exp_id}/', response_model=ExperimentUpdateOut)
@@ -149,11 +147,7 @@ async def get_experiment_runs_api(exp_id: str,
     project.repo.structured_db.invalidate_cache(cache_name)
     project.repo.run_props_cache_hint = None
 
-    response = {
-        'id': exp.uuid,
-        'runs': exp_runs
-    }
-    return response
+    return {'id': exp.uuid, 'runs': exp_runs}
 
 # Note APIs
 
@@ -161,11 +155,11 @@ async def get_experiment_runs_api(exp_id: str,
 @experiment_router.get('/{exp_id}/note/')
 async def list_note_api(exp_id, factory=Depends(object_factory)):
     with factory:
-        experiment = factory.find_experiment(exp_id)
-        if not experiment:
-            raise HTTPException(status_code=404)
+        if experiment := factory.find_experiment(exp_id):
+            notes = experiment.notes
 
-        notes = experiment.notes
+        else:
+            raise HTTPException(status_code=404)
 
     return notes
 
@@ -232,11 +226,11 @@ async def delete_note_api(exp_id, _id: int, factory=Depends(object_factory)):
         if not experiment:
             raise HTTPException(status_code=404)
 
-        note = experiment.find_note(_id=_id)
-        if not note:
-            raise HTTPException(status_code=404, detail=NOTE_NOT_FOUND.format(id=_id))
+        if note := experiment.find_note(_id=_id):
+            experiment.remove_note(_id)
 
-        experiment.remove_note(_id)
+        else:
+            raise HTTPException(status_code=404, detail=NOTE_NOT_FOUND.format(id=_id))
 
     return {
         'status': 'OK'

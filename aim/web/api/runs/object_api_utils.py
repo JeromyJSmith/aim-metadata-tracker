@@ -71,10 +71,8 @@ class CustomObjectApi:
         for requested_trace in requested_traces:
             trace_name = requested_trace.name
             context = Context(requested_trace.context)
-            trace = run._get_sequence(self.seq_type, trace_name, context)
-            if not trace:
-                continue
-            self.requested_traces.append(trace)
+            if trace := run._get_sequence(self.seq_type, trace_name, context):
+                self.requested_traces.append(trace)
 
     def set_ranges(self,
                    record_range: IndexRange,

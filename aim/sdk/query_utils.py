@@ -33,19 +33,21 @@ class RunView:
     def __getattr__(self, item):
         if item == 'metrics':
             return MetricsView(self.meta_run_tree, self.proxy_cache)
-        if item in ['finalized_at', 'end_time']:
+        if item == 'finalized_at':
             end_time = self.meta_run_tree['end_time']
-            if item == 'finalized_at':
-                if not end_time:
-                    return None
-                else:
-                    return datetime.datetime.fromtimestamp(end_time, tz=pytz.utc).replace(tzinfo=None)\
-                        - datetime.timedelta(minutes=self._timezone_offset)
-            else:
-                return end_time
+            return (
+                datetime.datetime.fromtimestamp(end_time, tz=pytz.utc).replace(
+                    tzinfo=None
+                )
+                - datetime.timedelta(minutes=self._timezone_offset)
+                if end_time
+                else None
+            )
+        elif item == 'end_time':
+            return self.meta_run_tree['end_time']
         if item == 'created_at':
             return getattr(self.db.caches['runs_cache'][self.hash], item)\
-                - datetime.timedelta(minutes=self._timezone_offset)
+                    - datetime.timedelta(minutes=self._timezone_offset)
         if item in ('active', 'duration'):
             return getattr(self.run, item)
         elif item in self.structured_run_cls.fields():

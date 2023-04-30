@@ -73,10 +73,7 @@ def parse_tb_logs(tb_logs, repo_inst, flat=False, no_cache=False):
 
     def create_ndarray(tensor):
         res = tensor_util.make_ndarray(tensor)
-        if res.dtype == "object":
-            return None
-        else:
-            return res
+        return None if res.dtype == "object" else res
 
     run_dir_candidates = sorted(run_dir_candidates, key=get_level, reverse=True)
     run_dir_candidates_filtered = set()
@@ -198,10 +195,13 @@ def parse_tb_logs(tb_logs, repo_inst, flat=False, no_cache=False):
 
                         plugin_name = value.metadata.plugin_data.plugin_name
                         value_id = f'{tag}_{plugin_name}'
-                        if value_id in run_tb_log['values']:
-                            if run_tb_log['values'][value_id]['timestamp'] >= timestamp:
-                                # prevent previously tracked data from re-tracking upon file update
-                                continue
+                        if (
+                            value_id in run_tb_log['values']
+                            and run_tb_log['values'][value_id]['timestamp']
+                            >= timestamp
+                        ):
+                            # prevent previously tracked data from re-tracking upon file update
+                            continue
 
                         if len(plugin_name) > 0 and plugin_name not in supported_plugins:
                             if not unsupported_plugin_noticed:
@@ -224,7 +224,7 @@ def parse_tb_logs(tb_logs, repo_inst, flat=False, no_cache=False):
                                     ]
                                     if len(track_val) == 1:
                                         track_val = track_val[0]
-                                elif plugin_name == "scalars" or plugin_name == "":
+                                elif plugin_name in ["scalars", ""]:
                                     track_val = create_ndarray(value.tensor)
                                 else:
                                     track_val = value.tensor.float_val[0]

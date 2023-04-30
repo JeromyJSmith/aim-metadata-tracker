@@ -75,22 +75,21 @@ class AimCallback:
         self, study: optuna.study.Study, trial: optuna.trial.FrozenTrial
     ) -> None:
         if isinstance(self._metric_name, str):
-            if len(trial.values) > 1:
-                # Broadcast default name for multi-objective optimization.
-                names = [f'{self._metric_name}_{i}' for i in range(len(trial.values))]
-            else:
-                names = [self._metric_name]
+            names = (
+                [f'{self._metric_name}_{i}' for i in range(len(trial.values))]
+                if len(trial.values) > 1
+                else [self._metric_name]
+            )
+        elif len(self._metric_name) != len(trial.values):
+            raise ValueError(
+                'Running multi-objective optimization '
+                f'with {len(trial.values)} objective values, but {len(self._metric_name)} names specified. '
+                'Match objective values and names, or use default broadcasting.'
+            )
         else:
-            if len(self._metric_name) != len(trial.values):
-                raise ValueError(
-                    'Running multi-objective optimization '
-                    f'with {len(trial.values)} objective values, but {len(self._metric_name)} names specified. '
-                    'Match objective values and names, or use default broadcasting.'
-                )
-            else:
-                names = self._metric_name
+            names = self._metric_name
 
-        metrics = {name: value for name, value in zip(names, trial.values)}
+        metrics = dict(zip(names, trial.values))
 
         if self._as_multirun:
             metrics['trial_number'] = trial.number

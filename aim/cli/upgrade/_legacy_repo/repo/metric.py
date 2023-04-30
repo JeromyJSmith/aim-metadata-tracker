@@ -14,7 +14,7 @@ class Metric(object):
         self._artifact_storage_opened = False
 
     def __repr__(self):
-        return '<{}: {}>\n'.format(self.name, self.traces)
+        return f'<{self.name}: {self.traces}>\n'
 
     def __hash__(self):
         return hash(self.name)

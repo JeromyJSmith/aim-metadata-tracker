@@ -55,7 +55,7 @@ class Session:
         name = kwargs.pop('name')
         step = kwargs.pop('step', None)
         epoch = kwargs.pop('epoch', None)
-        for key in kwargs.keys():
+        for key in kwargs:
             if key.startswith('__'):
                 del kwargs[key]
 
@@ -100,10 +100,9 @@ class Session:
         for th in threads:
             th.join()
 
-        if len(args):
-            if args[0] == 15:
-                signal.signal(signal.SIGTERM, cls._original_sigterm_handler)
-                os.kill(os.getpid(), 15)
+        if len(args) and args[0] == 15:
+            signal.signal(signal.SIGTERM, cls._original_sigterm_handler)
+            os.kill(os.getpid(), 15)
             # elif args[0] == 2:
             #     signal.signal(signal.SIGINT, cls._original_sigint_handler)
             #     os.kill(os.getpid(), 2)

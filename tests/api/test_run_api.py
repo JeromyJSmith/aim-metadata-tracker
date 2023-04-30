@@ -105,10 +105,7 @@ class TestRunApi(PrefilledDataApiTestBase):
 
     def test_search_aligned_metrics_api(self):
         client = self.client
-        run_hashes = []
-        for run, _ in zip(self.repo.iter_runs(), range(2)):
-            run_hashes.append(run.hash)
-
+        run_hashes = [run.hash for run, _ in zip(self.repo.iter_runs(), range(2))]
         response = client.post('/api/runs/search/metric/align/', json={
             'align_by': 'accuracy',
             'runs': [{
@@ -133,10 +130,7 @@ class TestRunApi(PrefilledDataApiTestBase):
     @pytest.mark.skip(reason="low priority. requires more investigation.")
     def test_search_aligned_metrics_api_with_wrong_context(self):
         client = self.client
-        run_hashes = []
-        for run, _ in zip(self.repo.iter_runs(), range(2)):
-            run_hashes.append(run.hash)
-
+        run_hashes = [run.hash for run, _ in zip(self.repo.iter_runs(), range(2))]
         response = client.post('/api/runs/search/metric/align/', json={
             'align_by': 'accuracy',
             'runs': [{
@@ -201,10 +195,14 @@ class TestRunApi(PrefilledDataApiTestBase):
 
     def _find_run_by_name(self, name: str) -> Run:
         repo = self.repo
-        for run in repo.iter_runs():
-            if run.name == name or run.get('name') == name:
-                return run
-        return None
+        return next(
+            (
+                run
+                for run in repo.iter_runs()
+                if run.name == name or run.get('name') == name
+            ),
+            None,
+        )
 
 
 class TestRunInfoApi(ApiTestBase):

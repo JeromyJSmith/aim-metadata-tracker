@@ -20,12 +20,10 @@ async def dashboards_list_api(session: Session = Depends(get_session)):
     dashboards_query = session.query(Dashboard) \
         .filter(Dashboard.is_archived == False) \
         .order_by(Dashboard.updated_at)  # noqa
-    result = []
-
-    for dashboard in dashboards_query:
-        result.append(dashboard_response_serializer(dashboard, session))
-
-    return result
+    return [
+        dashboard_response_serializer(dashboard, session)
+        for dashboard in dashboards_query
+    ]
 
 
 @dashboards_router.post('/', status_code=201, response_model=DashboardOut)
@@ -38,8 +36,11 @@ async def dashboards_post_api(request_data: DashboardCreateIn, session: Session 
 
     # update the app object's foreign key relation
     app_id = str(request_data.app_id)
-    app = session.query(ExploreState).filter(ExploreState.uuid == app_id).first()
-    if app:
+    if (
+        app := session.query(ExploreState)
+        .filter(ExploreState.uuid == app_id)
+        .first()
+    ):
         app.dashboard_id = dashboard.uuid
 
     # commit db session
@@ -50,13 +51,14 @@ async def dashboards_post_api(request_data: DashboardCreateIn, session: Session 
 
 @dashboards_router.get('/{dashboard_id}/', response_model=DashboardOut)
 async def dashboards_get_api(dashboard_id: str, session: Session = Depends(get_session)):
-    dashboard = session.query(Dashboard) \
-        .filter(Dashboard.uuid == dashboard_id, Dashboard.is_archived == False) \
-        .first()  # noqa
-    if not dashboard:
+    if (
+        dashboard := session.query(Dashboard)
+        .filter(Dashboard.uuid == dashboard_id, Dashboard.is_archived == False)
+        .first()
+    ):
+        return dashboard_response_serializer(dashboard, session)
+    else:
         raise HTTPException(status_code=404)
-
-    return dashboard_response_serializer(dashboard, session)
 
 
 @dashboards_router.put('/{dashboard_id}/', response_model=DashboardOut)
@@ -67,11 +69,9 @@ async def dashboards_put_api(dashboard_id: str, request_data: DashboardUpdateIn,
         .first()  # noqa
     if not dashboard:
         raise HTTPException(status_code=404)
-    dashboard_name = request_data.name
-    if dashboard_name:
+    if dashboard_name := request_data.name:
         dashboard.name = dashboard_name
-    dashboard_description = request_data.description
-    if dashboard_description:
+    if dashboard_description := request_data.description:
         dashboard.description = dashboard_description
     session.commit()
 

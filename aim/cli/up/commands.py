@@ -74,18 +74,22 @@ def up(dev, host, port, workers, uds,
     repo_status = Repo.check_repo_status(repo_path)
     if repo_status == RepoStatus.MISSING:
         init_repo = None
-        if not force_init:
-            init_repo = click.confirm(f'\'{repo_path}\' is not a valid Aim repository. Do you want to initialize it?')
-        else:
-            init_repo = True
+        init_repo = (
+            True
+            if force_init
+            else click.confirm(
+                f'\'{repo_path}\' is not a valid Aim repository. Do you want to initialize it?'
+            )
+        )
         if not init_repo:
             click.echo('To initialize repo please run the following command:')
             click.secho('aim init', fg='yellow')
             return
         repo_inst = Repo.from_path(repo_path, init=True)
     elif repo_status == RepoStatus.UPDATE_REQUIRED:
-        upgrade_repo = click.confirm(f'\'{repo_path}\' requires upgrade. Do you want to run upgrade automatically?')
-        if upgrade_repo:
+        if upgrade_repo := click.confirm(
+            f'\'{repo_path}\' requires upgrade. Do you want to run upgrade automatically?'
+        ):
             from aim.cli.upgrade.utils import convert_2to3
             repo_inst = convert_2to3(repo_path, drop_existing=False, skip_failed_runs=False, skip_checks=False)
         else:
@@ -119,16 +123,15 @@ def up(dev, host, port, workers, uds,
                    f'https://aimstack.readthedocs.io/en/latest/community/telemetry.html')
     if dev:
         analytics.dev_mode = True
-    click.echo(click.style('Running Aim UI on repo `{}`'.format(repo_inst), fg='yellow'))
+    click.echo(click.style(f'Running Aim UI on repo `{repo_inst}`', fg='yellow'))
 
     if uds:
-        click.echo('Aim UI running on {}'.format(uds))
+        click.echo(f'Aim UI running on {uds}')
     else:
         scheme = 'https' if ssl_keyfile or ssl_certfile else 'http'
-        click.echo('Open {}://{}:{}{}'.format(scheme, host, port, base_path), err=True)
+        click.echo(f'Open {scheme}://{host}:{port}{base_path}', err=True)
 
-    proxy_url = os.environ.get(AIM_PROXY_URL)
-    if proxy_url:
+    if proxy_url := os.environ.get(AIM_PROXY_URL):
         click.echo(f'Proxy {proxy_url}{base_path}/')
 
     click.echo('Press Ctrl+C to exit')

@@ -118,8 +118,7 @@ class InMemoryTreeView(TreeView):
         container = self.container
         for key in path:
             container = container[key]
-        for key in container.keys():
-            yield key
+        yield from container.keys()
 
     def items_eager(
             self,

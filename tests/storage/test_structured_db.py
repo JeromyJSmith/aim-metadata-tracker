@@ -28,6 +28,6 @@ class TestStructuredDatabase(PrefilledDataTestBase):
                 db1.create_experiment('exp 1')
                 db2.create_experiment('exp 2')
 
-        experiment_names = set((exp.name for exp in self.repo.structured_db.experiments()))
-        expected_names = set(('exp 1', 'exp 2'))
+        experiment_names = {exp.name for exp in self.repo.structured_db.experiments()}
+        expected_names = {'exp 1', 'exp 2'}
         self.assertTrue(experiment_names.issuperset(expected_names))

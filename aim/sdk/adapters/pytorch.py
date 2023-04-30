@@ -53,11 +53,11 @@ def track_gradients_dists(model, run):
 def get_model_layers(model, dt, parent_name=None):
     layers = {}
     for name, m in model.named_children():
-        layer_name = '{}__{}'.format(parent_name, name) if parent_name else name
-        layer_name += '.{}'.format(type(m).__name__)
+        layer_name = f'{parent_name}__{name}' if parent_name else name
+        layer_name += f'.{type(m).__name__}'
 
         if len(list(m.named_children())):
-            layers.update(get_model_layers(m, dt, layer_name))
+            layers |= get_model_layers(m, dt, layer_name)
         else:
             layers[layer_name] = {}
             weight = None

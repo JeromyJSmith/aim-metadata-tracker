@@ -32,17 +32,12 @@ class AimOutputFormat(KVWriter):
             if excluded is not None:
                 continue
 
-            if isinstance(value, np.ScalarType):
-                if not isinstance(value, str):
-                    tag, key = key.split('/')
-                    if tag in ['train', 'valid']:
-                        context = {'subset': tag}
-                    else:
-                        context = {'tag': tag}
-
-                    self.aim_callback.experiment.track(
-                        value, key, step=step, context=context
-                    )
+            if isinstance(value, np.ScalarType) and not isinstance(value, str):
+                tag, key = key.split('/')
+                context = {'subset': tag} if tag in ['train', 'valid'] else {'tag': tag}
+                self.aim_callback.experiment.track(
+                    value, key, step=step, context=context
+                )
 
 
 class AimCallback(BaseCallback):

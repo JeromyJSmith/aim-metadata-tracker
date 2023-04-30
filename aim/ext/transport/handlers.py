@@ -40,27 +40,25 @@ def get_handler():
 
 
 def get_tree(**kwargs):
-    repo_path = os.environ.get(AIM_SERVER_MOUNTED_REPO_PATH)
-    if repo_path:
+    if repo_path := os.environ.get(AIM_SERVER_MOUNTED_REPO_PATH):
         repo = Repo.from_path(repo_path)
     else:
         repo = Repo.default_repo()
     name = kwargs['name']
-    sub = kwargs['sub']
-    read_only = kwargs['read_only']
-    from_union = kwargs['from_union']
     index = kwargs['index']
-    timeout = kwargs['timeout']
     no_cache = kwargs.get('no_cache', False)
     if index:
+        timeout = kwargs['timeout']
         return ResourceRef(repo._get_index_tree(name, timeout))
     else:
+        sub = kwargs['sub']
+        read_only = kwargs['read_only']
+        from_union = kwargs['from_union']
         return ResourceRef(repo.request_tree(name, sub, read_only=read_only, from_union=from_union, no_cache=no_cache))
 
 
 def get_structured_run(hash_, read_only, **kwargs):
-    repo_path = os.environ.get(AIM_SERVER_MOUNTED_REPO_PATH)
-    if repo_path:
+    if repo_path := os.environ.get(AIM_SERVER_MOUNTED_REPO_PATH):
         repo = Repo.from_path(repo_path)
     else:
         repo = Repo.default_repo()
@@ -69,8 +67,7 @@ def get_structured_run(hash_, read_only, **kwargs):
 
 
 def get_repo():
-    repo_path = os.environ.get(AIM_SERVER_MOUNTED_REPO_PATH)
-    if repo_path:
+    if repo_path := os.environ.get(AIM_SERVER_MOUNTED_REPO_PATH):
         repo = Repo.from_path(repo_path)
     else:
         repo = Repo.default_repo()
@@ -78,8 +75,7 @@ def get_repo():
 
 
 def get_lock(**kwargs):
-    repo_path = os.environ.get(AIM_SERVER_MOUNTED_REPO_PATH)
-    if repo_path:
+    if repo_path := os.environ.get(AIM_SERVER_MOUNTED_REPO_PATH):
         repo = Repo.from_path(repo_path)
     else:
         repo = Repo.default_repo()
@@ -90,8 +86,7 @@ def get_lock(**kwargs):
 
 
 def get_run_heartbeat(run_hash, **kwargs):
-    repo_path = os.environ.get(AIM_SERVER_MOUNTED_REPO_PATH)
-    if repo_path:
+    if repo_path := os.environ.get(AIM_SERVER_MOUNTED_REPO_PATH):
         repo = Repo.from_path(repo_path)
     else:
         repo = Repo.default_repo()
@@ -102,8 +97,7 @@ def get_run_heartbeat(run_hash, **kwargs):
 
 
 def get_file_manager(**kwargs):
-    repo_path = os.environ.get(AIM_SERVER_MOUNTED_REPO_PATH)
-    if repo_path:
+    if repo_path := os.environ.get(AIM_SERVER_MOUNTED_REPO_PATH):
         repo = Repo.from_path(repo_path)
     else:
         repo = Repo.default_repo()

@@ -51,14 +51,14 @@ def safer_getattr(object, name, default=None, getattr=getattr):
     '''
     if name == 'format' and isinstance(object, str):
         raise NotImplementedError(
-            'Using format() on a %s is not safe.' % object.__class__.__name__)
+            f'Using format() on a {object.__class__.__name__} is not safe.'
+        )
     if name[0] == '_':
         raise AttributeError(
             '"{name}" is an invalid attribute name because it '
             'starts with "_"'.format(name=name)
         )
-    val = getattr(object, name, default)
-    return val
+    return getattr(object, name, default)
 
 
 restricted_globals = {
@@ -104,10 +104,9 @@ class Query:
 @lru_cache(maxsize=100)
 def compile_checker(expr):
     source_code = expr
-    byte_code = compile_restricted(source_code,
-                                   filename='<inline code>',
-                                   mode='eval')
-    return byte_code
+    return compile_restricted(
+        source_code, filename='<inline code>', mode='eval'
+    )
 
 
 def syntax_error_check(expr):
@@ -145,14 +144,12 @@ def strip_query(query: str) -> str:
 @lru_cache(maxsize=100)
 def query_add_default_expr(query: str) -> str:
     default_expression = 'run.archived == False'
-    # add the default expression to the query if needed
     if not query:
         return default_expression
+    if 'run.archived' not in query:
+        return f'{default_expression} and {query}'
     else:
-        if 'run.archived' not in query:
-            return f'{default_expression} and {query}'
-        else:
-            return query
+        return query
 
 
 class RestrictedPythonQuery(Query):

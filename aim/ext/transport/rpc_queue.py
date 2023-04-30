@@ -100,8 +100,7 @@ class RpcQueueWithRetry(object):
         self._queue.join()
 
     def stop(self):
-        pending_task_count = self._queue.qsize()
-        if pending_task_count:
+        if pending_task_count := self._queue.qsize():
             logger.warning(f'Processing {pending_task_count} pending tasks in the rpc queue \'{self._name}\'... '
                            f'Please do not kill the process.')
             self._queue.join()

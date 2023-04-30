@@ -70,7 +70,7 @@ class ContainerTreeView(TreeView):
         try:
             return treeutils.decode_tree(it, strict=strict, resolve_objects=resolve_objects)
         except KeyError:
-            raise KeyError('No key {} is present.'.format(path))
+            raise KeyError(f'No key {path} is present.')
 
     def __delitem__(
         self,
@@ -119,10 +119,7 @@ class ContainerTreeView(TreeView):
         path = None
         while True:
             try:
-                if path is None:
-                    path = next(walker)
-                else:
-                    path = walker.send(path)
+                path = next(walker) if path is None else walker.send(path)
             except StopIteration:
                 return
             path = E.decode_path(path)
@@ -164,8 +161,7 @@ class ContainerTreeView(TreeView):
     ]]:
         prefix = E.encode_path(path)
         it = self.container.items(prefix)
-        for path, value in treeutils.iter_decode_tree(it, level=level, skip_top_level=True):
-            yield path, value
+        yield from treeutils.iter_decode_tree(it, level=level, skip_top_level=True)
 
     def array(
         self,
@@ -191,9 +187,7 @@ class ContainerTreeView(TreeView):
         if isinstance(path, (int, str)):
             path = (path,)
         prefix = E.encode_path(path)
-        # assert prefix.endswith(b'\xfe')
-        # prefix = prefix[:-1] + b'\xff'
-        p = E.decode_path(self.container.view(prefix).prev_key())
-        if not p:
+        if p := E.decode_path(self.container.view(prefix).prev_key()):
+            return p[0]
+        else:
             raise KeyError
-        return p[0]

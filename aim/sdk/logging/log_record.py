@@ -57,8 +57,7 @@ class LogRecords(Sequence):
 
     @classmethod
     def allowed_dtypes(cls) -> Union[str, Tuple[str, ...]]:
-        text_typename = LogRecord.get_typename()
-        return text_typename
+        return LogRecord.get_typename()
 
     @classmethod
     def sequence_name(cls) -> str:

@@ -206,9 +206,8 @@ class StructuredRunMixin:
         """
         if self.end_time:
             return self.end_time - self.creation_time
-        else:
-            from aim.web.api.utils import datetime_now
-            return datetime_now().timestamp() - self.creation_time
+        from aim.web.api.utils import datetime_now
+        return datetime_now().timestamp() - self.creation_time
 
     @property
     def active(self):
@@ -218,10 +217,7 @@ class StructuredRunMixin:
             :type: bool
         """
 
-        if self.end_time:
-            return False
-        else:
-            return True
+        return not self.end_time
 
     @property
     def experiment(self):
@@ -505,12 +501,15 @@ class BasicRun(BaseRun, StructuredRunMixin):
         Returns:
             :obj:`Metric` object if exists, `None` otherwise.
         """
-        if self.read_only and not Run._metric_version_warning_shown:
-            if self.check_metrics_version():
-                logger.warning(f'Detected sub-optimal format metrics for Run {self.hash}. Consider upgrading repo '
-                               f'to improve queries performance:')
-                logger.warning(f'aim storage --repo {self.repo.path} upgrade 3.11+ \'*\'')
-                Run._metric_version_warning_shown = True
+        if (
+            self.read_only
+            and not Run._metric_version_warning_shown
+            and self.check_metrics_version()
+        ):
+            logger.warning(f'Detected sub-optimal format metrics for Run {self.hash}. Consider upgrading repo '
+                           f'to improve queries performance:')
+            logger.warning(f'aim storage --repo {self.repo.path} upgrade 3.11+ \'*\'')
+            Run._metric_version_warning_shown = True
 
         return self._get_sequence('metric', name, context)
 
@@ -754,8 +753,7 @@ class BasicRun(BaseRun, StructuredRunMixin):
                     data[s] = val
 
         import pandas as pd
-        df = pd.DataFrame(data, index=[0])
-        return df
+        return pd.DataFrame(data, index=[0])
 
     def report_progress(
         self,

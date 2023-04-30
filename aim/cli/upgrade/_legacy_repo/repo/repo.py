@@ -70,11 +70,10 @@ class AimRepo:
         Config property getter, loads config file if not already loaded and
         returns json object
         """
-        if len(self._config) == 0:
-            if os.path.isfile(self.config_path):
-                with open(self.config_path, 'r') as f:
-                    config = json.load(f)
-                self._config = config
+        if len(self._config) == 0 and os.path.isfile(self.config_path):
+            with open(self.config_path, 'r') as f:
+                config = json.load(f)
+            self._config = config
         return self._config
 
     def get_records_storage(self, path, mode):
@@ -103,8 +102,10 @@ class AimRepo:
         if not os.path.isdir(branch_path):
             return commits
 
-        for i in os.listdir(branch_path):
-            if os.path.isdir(os.path.join(branch_path, i)) \
-                    and i != AIM_COMMIT_INDEX_DIR_NAME:
-                commits.append(i)
+        commits.extend(
+            i
+            for i in os.listdir(branch_path)
+            if os.path.isdir(os.path.join(branch_path, i))
+            and i != AIM_COMMIT_INDEX_DIR_NAME
+        )
         return commits

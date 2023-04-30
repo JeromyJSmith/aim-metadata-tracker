@@ -59,7 +59,7 @@ class RunTracker:
     def __init__(self, run: 'Run'):
         self.meta_tree = run.meta_tree
         self.read_only = run.read_only
-        self.contexts: Dict[Context, int] = dict()
+        self.contexts: Dict[Context, int] = {}
 
         if not self.read_only:
             # remote tracking creates dedicated thread for tracking, so don't need to create another one here

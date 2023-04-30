@@ -48,8 +48,7 @@ class DvcData(CustomObject):
 
     def _get_dvc_params(self, url):
         try:
-            params = api.params_show(repo=url)
-            return params
+            return api.params_show(repo=url)
         except Exception:
             logging.warning("Failed to log params")
 
@@ -57,8 +56,7 @@ class DvcData(CustomObject):
         try:
             with open(Path(url).joinpath('dvc.lock'), 'r') as f:
                 try:
-                    content = yaml.safe_load(f)
-                    return content
+                    return yaml.safe_load(f)
                 except yaml.YAMLError as exc:
                     logging.warning(exc)
                 content = f.readlines()

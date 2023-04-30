@@ -37,11 +37,7 @@ class RemoteTrackingServicer(tracking_pb2_grpc.RemoteTrackingServiceServicer):
         return tracking_rpc.ResourceResponse(status=tracking_rpc.ResourceResponse.Status.OK)
 
     def get_resource(self, request: tracking_rpc.ResourceRequest, _context):
-        if not request.handler:
-            resource_handler = get_handler()
-        else:
-            resource_handler = request.handler
-
+        resource_handler = request.handler if request.handler else get_handler()
         try:
             resource_cls = self.registry[request.resource_type]
             if len(request.args) > 0:
@@ -119,11 +115,7 @@ class RemoteTrackingServicer(tracking_pb2_grpc.RemoteTrackingServiceServicer):
                 result = None
             else:
                 attr = getattr(resource, method_name)
-                if callable(attr):
-                    result = attr(*checked_args)
-                else:
-                    result = attr
-
+                result = attr(*checked_args) if callable(attr) else attr
             yield tracking_rpc.InstructionResponse(header=tracking_rpc.ResponseHeader(
                 version='0.1',
                 status=tracking_rpc.ResponseHeader.Status.OK

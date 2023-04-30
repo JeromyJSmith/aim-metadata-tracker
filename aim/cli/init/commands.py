@@ -35,8 +35,7 @@ def init(repo, yes):
     repo = Repo.from_path(repo_path, init=True)
     if re_init:
         analytics.track_event(event_name='[Repo] Initialize')
-        click.echo(
-            'Re-initialized empty Aim repository at {}'.format(repo.root_path))
+        click.echo(f'Re-initialized empty Aim repository at {repo.root_path}')
     else:
         analytics.track_event(event_name='[Repo] Re-initialize')
-        click.echo('Initialized a new Aim repository at {}'.format(repo.root_path))
+        click.echo(f'Initialized a new Aim repository at {repo.root_path}')

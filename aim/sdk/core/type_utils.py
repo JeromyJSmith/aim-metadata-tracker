@@ -10,9 +10,7 @@ except ImportError:
         return tp.__args__
 
     def get_origin(tp):
-        if hasattr(tp, '__origin__'):
-            return tp.__origin__
-        return None
+        return tp.__origin__ if hasattr(tp, '__origin__') else None
 
 
 from aim.sdk.core.object import Object
@@ -52,10 +50,7 @@ def is_subtype(type_: str, base_type: str) -> bool:
 
 
 def is_allowed_type(type_: str, type_list: Tuple[str]) -> bool:
-    for base_type in type_list:
-        if type_.startswith(base_type):
-            return True
-    return False
+    return any(type_.startswith(base_type) for base_type in type_list)
 
 
 def get_sequence_value_types(seq_type: Type['Sequence']) -> Tuple[str, ...]:

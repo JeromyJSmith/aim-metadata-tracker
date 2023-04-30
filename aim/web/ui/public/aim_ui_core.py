@@ -60,7 +60,7 @@ def memoize(func):
 class Repo:
     @classmethod
     @memoize_async
-    async def filter(self, type, query=""):
+    async def filter(cls, type, query=""):
         data = await search(type, query)
         data = create_proxy(data.to_py())
         items = []
@@ -134,15 +134,11 @@ def update_viz_map(viz_type, key=None):
     else:
         viz_map_keys[viz_type] = 0
 
-    viz_key = viz_type + str(viz_map_keys[viz_type])
-
-    return viz_key
+    return viz_type + str(viz_map_keys[viz_type])
 
 
 def apply_group_value_pattern(value, list):
-    if type(value) is int:
-        return list[value % len(list)]
-    return value
+    return list[value % len(list)] if type(value) is int else value
 
 
 @memoize
@@ -177,17 +173,17 @@ def group(name, data, options, key=None):
         grouped_data.append(item)
     sorted_groups = group_map
     if callable(options):
-        sorted_groups = {
-            k: v
-            for k, v in sorted(
-                sorted_groups.items(), key=lambda x: str(x[1]["val"]), reverse=True
+        sorted_groups = dict(
+            sorted(
+                sorted_groups.items(),
+                key=lambda x: str(x[1]["val"]),
+                reverse=True,
             )
-        }
+        )
     else:
         for i, opt in enumerate(options):
-            sorted_groups = {
-                k: v
-                for k, v in sorted(
+            sorted_groups = dict(
+                sorted(
                     sorted_groups.items(),
                     key=lambda x: (3, str(x[1]["val"][i]))
                     if type(x[1]["val"][i]) in [tuple, list, dict]
@@ -201,7 +197,7 @@ def group(name, data, options, key=None):
                         )
                     ),
                 )
-            }
+            )
 
     i = 0
     for group_key in sorted_groups:
@@ -324,7 +320,7 @@ class Component(Element):
             "board_id": self.board_id
         }
 
-        component_data.update(self.state)
+        component_data |= self.state
 
         render_to_layout(component_data)
 
@@ -355,7 +351,7 @@ class Component(Element):
                 elem[f"{prop}_val"] = current["val"]
                 elem[f"{prop}_options"] = value
 
-            if prop == "row" or prop == "column":
+            if prop in ["row", "column"]:
                 self.no_facet = False
 
             items.append(elem)
@@ -773,4 +769,4 @@ class Switch(Component):
         self.set_state({
             "data": val
         })
-        print("Switch" + str(val))
+        print(f"Switch{str(val)}")

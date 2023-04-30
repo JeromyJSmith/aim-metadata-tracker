@@ -23,9 +23,7 @@ def random_access_metric_values(repo, query, density):
         values_length = len(values)
         step = len(values)//density
 
-        accessed_values = []
-        for i in range(0, values_length, step):
-            accessed_values.append(trace.values[i])
+        accessed_values = [trace.values[i] for i in range(0, values_length, step)]
 
 
 @timing()

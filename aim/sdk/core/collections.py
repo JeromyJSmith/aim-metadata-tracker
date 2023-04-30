@@ -165,9 +165,9 @@ class SequenceFilterCollection(SequenceCollectionBase['Sequence']):
 
             proxy = SequenceQueryProxy(name, self._context_from_idx, ctx_idx, seq_tree, query_cache[hash_])
             c_proxy = ContainerQueryProxy(cont_tree, query_cache[hash_])
-            query_params = {p: proxy for p in alias_names}
-
-            query_params.update({cp: c_proxy for cp in container_alias_names})
+            query_params = {p: proxy for p in alias_names} | {
+                cp: c_proxy for cp in container_alias_names
+            }
             if self.query.check(**query_params):
                 yield hash_, name, ctx_idx
 

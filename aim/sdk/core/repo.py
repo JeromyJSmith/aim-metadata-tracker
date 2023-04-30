@@ -47,9 +47,8 @@ class StorageEngine:
     def heartbeat_reporter(self, hash_: str, status_reporter: RunStatusReporter):
         if self.repo().is_remote_repo:
             return RemoteRunHeartbeatReporter(self.repo()._client, hash_)
-        else:
-            progress_flag_path = pathlib.Path(self.repo().path) / 'meta' / 'progress' / hash_
-            return ScheduledStatusReporter(status_reporter, touch_path=progress_flag_path)
+        progress_flag_path = pathlib.Path(self.repo().path) / 'meta' / 'progress' / hash_
+        return ScheduledStatusReporter(status_reporter, touch_path=progress_flag_path)
 
     def task_queue(self, hash_: str):
         if self.repo().is_remote_repo:
@@ -76,7 +75,7 @@ class Repo(LegacyRepo):
             assert len(kwargs) == 1
             (var_name, type_) = kwargs.popitem()
         else:
-            assert len(kwargs) == 0
+            assert not kwargs
             var_name = None
 
         query_context = {
@@ -102,19 +101,23 @@ class Repo(LegacyRepo):
             orig_type = type_.__origin__ if hasattr(type_, '__origin__') else type_
 
         if issubclass(orig_type, Container):
-            query_context.update({
-                KeyNames.CONTAINER_TYPES_MAP: self.meta_tree.subtree(KeyNames.CONTAINER_TYPES_MAP),
+            query_context |= {
+                KeyNames.CONTAINER_TYPES_MAP: self.meta_tree.subtree(
+                    KeyNames.CONTAINER_TYPES_MAP
+                ),
                 KeyNames.CONTAINER_TYPE: type_,
                 'required_typename': type_.get_full_typename(),
-            })
+            }
             return ContainerCollection[type_](query_context=query_context)
         if issubclass(orig_type, Sequence):
-            query_context.update({
-                KeyNames.ALLOWED_VALUE_TYPES: type_utils.get_sequence_value_types(type_),
+            query_context |= {
+                KeyNames.ALLOWED_VALUE_TYPES: type_utils.get_sequence_value_types(
+                    type_
+                ),
                 KeyNames.CONTAINER_TYPE: Container,
                 KeyNames.SEQUENCE_TYPE: type_,
                 'required_typename': type_.get_full_typename(),
-            })
+            }
             return SequenceCollection[type_](query_context=query_context)
 
     def containers(self,

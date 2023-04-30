@@ -30,8 +30,7 @@ packages = find_packages(exclude=('tests', 'performance_tests', 'aim.web.ui'))
 def package_files(directory):
     paths = []
     for (path, _, filenames) in os.walk(directory):
-        for filename in filenames:
-            paths.append(os.path.join('..', path, filename))
+        paths.extend(os.path.join('..', path, filename) for filename in filenames)
     return paths
 
 
@@ -110,7 +109,7 @@ class UploadCommand(Command):
             pass
 
         self.status('Cleaning build directory')
-        os.system('{} setup.py clean --all'.format(sys.executable))
+        os.system(f'{sys.executable} setup.py clean --all')
 
         self.status('Building Source and Wheel (universal) distribution…')
         os.system(f'{sys.executable} setup.py sdist bdist_wheel --universal')
@@ -177,9 +176,7 @@ def configure_extension(name: str, path: str):
 
 def cytonize_extensions():
     """Configure and Cythonize all the extensions"""
-    extensions = []
-    for name, path in CYTHON_SCRITPS:
-        extensions.append(configure_extension(name, path))
+    extensions = [configure_extension(name, path) for name, path in CYTHON_SCRITPS]
     return cythonize(extensions, show_all_warnings=True)
 
 

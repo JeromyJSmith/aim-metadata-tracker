@@ -250,8 +250,10 @@ def main():
 
     # Log on each process the small summary:
     logger.warning(
-        f'Process rank: {training_args.local_rank}, device: {training_args.device}, n_gpu: {training_args.n_gpu}'
-        + f'distributed training: {bool(training_args.local_rank != -1)}, 16-bits training: {training_args.fp16}'
+        (
+            f'Process rank: {training_args.local_rank}, device: {training_args.device}, n_gpu: {training_args.n_gpu}'
+            + f'distributed training: {training_args.local_rank != -1}, 16-bits training: {training_args.fp16}'
+        )
     )
     # Set the verbosity to info of the Transformers logger (on main process only):
     if is_main_process(training_args.local_rank):
@@ -301,7 +303,7 @@ def main():
                     'Need either a GLUE task or a test file for `do_predict`.'
                 )
 
-        for key in data_files.keys():
+        for key in data_files:
             logger.info(f'load a local file for {key}: {data_files[key]}')
 
         if data_args.train_file.endswith('.csv'):
@@ -361,7 +363,7 @@ def main():
     )
     model = AutoModelForSequenceClassification.from_pretrained(
         model_args.model_name_or_path,
-        from_tf=bool('.ckpt' in model_args.model_name_or_path),
+        from_tf='.ckpt' in model_args.model_name_or_path,
         config=config,
         cache_dir=model_args.cache_dir,
         revision=model_args.model_revision,
@@ -388,12 +390,7 @@ def main():
                 sentence1_key, sentence2_key = non_label_column_names[0], None
 
     # Padding strategy
-    if data_args.pad_to_max_length:
-        padding = 'max_length'
-    else:
-        # We will pad later, dynamically at batch creation, to the max sequence length in each batch
-        padding = False
-
+    padding = 'max_length' if data_args.pad_to_max_length else False
     # Some models have set the order of the labels to use, so let's make sure we do use it.
     label_to_id = None
     if (

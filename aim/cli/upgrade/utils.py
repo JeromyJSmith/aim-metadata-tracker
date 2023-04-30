@@ -21,9 +21,9 @@ class RepoIntegrityError(Exception):
 
 def setup_directories(input_path: str):
     path = clean_repo_path(input_path)
-    repo_path = path + '/.aim'
-    new_repo_path = path + '/.aim_progress'
-    l_repo_path = path + '/.aim_legacy'
+    repo_path = f'{path}/.aim'
+    new_repo_path = f'{path}/.aim_progress'
+    l_repo_path = f'{path}/.aim_legacy'
     if not (os.path.exists(repo_path) and os.path.isdir(repo_path)):
         click.echo(f'\'{input_path}\' does not seem to be an Aim repository. Exiting.')
         exit(1)
@@ -36,8 +36,10 @@ def setup_directories(input_path: str):
 def collect_runs(lrepo: LegacyRepo):
     lruns = []
     for branch in lrepo.list_branches():
-        for commit in lrepo.list_branch_commits(branch):
-            lruns.append(LegacyRun(lrepo, experiment_name=branch, run_hash=commit))
+        lruns.extend(
+            LegacyRun(lrepo, experiment_name=branch, run_hash=commit)
+            for commit in lrepo.list_branch_commits(branch)
+        )
     return lruns
 
 

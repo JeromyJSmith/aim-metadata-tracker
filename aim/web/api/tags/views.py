@@ -57,19 +57,17 @@ async def create_tag_api(tag_in: TagCreateIn, factory=Depends(object_factory)):
 
 @tags_router.get('/{tag_id}/', response_model=TagGetOut)
 async def get_tag_api(tag_id: str, factory=Depends(object_factory)):
-    tag = factory.find_tag(tag_id)
-    if not tag:
+    if tag := factory.find_tag(tag_id):
+        return {
+            'id': tag.uuid,
+            'name': tag.name,
+            'color': tag.color,
+            'description': tag.description,
+            'archived': tag.archived,
+            'run_count': len(tag.runs),
+        }
+    else:
         raise HTTPException(status_code=404)
-
-    response = {
-        'id': tag.uuid,
-        'name': tag.name,
-        'color': tag.color,
-        'description': tag.description,
-        'archived': tag.archived,
-        'run_count': len(tag.runs)
-    }
-    return response
 
 
 @tags_router.put('/{tag_id}/', response_model=TagUpdateOut)
@@ -130,8 +128,4 @@ async def get_tagged_runs_api(tag_id: str, factory=Depends(object_factory)):
     project.repo.structured_db.invalidate_cache(cache_name)
     project.repo.run_props_cache_hint = None
 
-    response = {
-        'id': tag.uuid,
-        'runs': tag_runs
-    }
-    return response
+    return {'id': tag.uuid, 'runs': tag_runs}

@@ -163,10 +163,7 @@ def close_runs(ctx, hashes, yes):
 
     click.secho(f'This command will forcefully close {len(hashes)} Runs from Aim Repo \'{repo_path}\'. '
                 f'Please make sure Runs are not active. Data corruption may occur otherwise.')
-    if yes:
-        confirmed = True
-    else:
-        confirmed = click.confirm('Do you want to proceed?')
+    confirmed = True if yes else click.confirm('Do you want to proceed?')
     if not confirmed:
         return
 

@@ -74,8 +74,7 @@ class DB(ObjectFactory):
     @staticmethod
     def get_db_url(path: str) -> str:
         if os.path.exists(path):
-            db_url = f'{DB._DIALECT}:///{path}/{DB._DB_NAME}'
-            return db_url
+            return f'{DB._DIALECT}:///{path}/{DB._DB_NAME}'
         else:
             raise RuntimeError(f'Cannot find database {path}. Please init first.')
 

@@ -31,7 +31,7 @@ def exec_cmd(
     """
     cmd_env = os.environ.copy()
     if env:
-        cmd_env.update(env)
+        cmd_env |= env
     if stream_output:
         child = subprocess.Popen(
             cmd, env=cmd_env, cwd=cwd, universal_newlines=True, stdin=subprocess.PIPE, **kwargs
@@ -39,7 +39,7 @@ def exec_cmd(
         child.communicate(cmd_stdin)
         exit_code = child.wait()
         if throw_on_error and exit_code != 0:
-            raise ShellCommandException("Non-zero exitcode: %s" % (exit_code))
+            raise ShellCommandException(f"Non-zero exitcode: {exit_code}")
         return exit_code
     else:
         child = subprocess.Popen(
@@ -66,7 +66,7 @@ def get_module(name, required=True):
         return import_module(name)
     except Exception:
         if required:
-            raise ValueError('No module named: \'{}\''.format(name))
+            raise ValueError(f"No module named: \'{name}\'")
         return None
 
 
@@ -83,9 +83,7 @@ def ls_dir(path):
     ls = []
 
     for root, _, file_names in os.walk(path):
-        for file_name in file_names:
-            ls.append(os.path.join(root, file_name))
-
+        ls.extend(os.path.join(root, file_name) for file_name in file_names)
     return ls
 
 
@@ -94,4 +92,4 @@ def get_root_path():
 
 
 def get_db_url():
-    return 'sqlite:///{}/{}/aim_db'.format(get_root_path(), get_aim_repo_name())
+    return f'sqlite:///{get_root_path()}/{get_aim_repo_name()}/aim_db'

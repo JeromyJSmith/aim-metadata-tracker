@@ -21,8 +21,7 @@ class Logs(MediaSequenceBase):
 
     @classmethod
     def allowed_dtypes(cls) -> Union[str, Tuple[str, ...]]:
-        text_typename = LogLine.get_typename()
-        return text_typename
+        return LogLine.get_typename()
 
     @classmethod
     def sequence_name(cls) -> str:

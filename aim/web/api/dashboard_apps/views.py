@@ -20,10 +20,7 @@ dashboard_apps_router = APIRouter()
 @dashboard_apps_router.get('/', response_model=ExploreStateListOut)
 async def dashboard_apps_list_api(session: Session = Depends(get_session)):
     explore_states = session.query(ExploreState).filter(ExploreState.is_archived == False)  # noqa
-    result = []
-    for es in explore_states:
-        result.append(explore_state_response_serializer(es))
-    return result
+    return [explore_state_response_serializer(es) for es in explore_states]
 
 
 @dashboard_apps_router.post('/', status_code=201, response_model=ExploreStateGetOut)
@@ -40,13 +37,14 @@ async def dashboard_apps_create_api(explore_state_in: ExploreStateCreateIn, sess
 
 @dashboard_apps_router.get('/{app_id}/', response_model=ExploreStateGetOut)
 async def dashboard_apps_get_api(app_id: str, session: Session = Depends(get_session)):
-    explore_state = session.query(ExploreState) \
-        .filter(ExploreState.uuid == app_id, ExploreState.is_archived == False) \
+    if (
+        explore_state := session.query(ExploreState)
+        .filter(ExploreState.uuid == app_id, ExploreState.is_archived == False)
         .first()
-    if not explore_state:
+    ):
+        return explore_state_response_serializer(explore_state)
+    else:
         raise HTTPException(status_code=404)
-
-    return explore_state_response_serializer(explore_state)
 
 
 @dashboard_apps_router.put('/{app_id}/', response_model=ExploreStateGetOut)

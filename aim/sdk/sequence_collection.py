@@ -119,10 +119,8 @@ class SingleRunSequenceCollection(SequenceCollection):
         for seq_name, ctx, run in self.run.iter_sequence_info_by_type(allowed_dtypes):
             run_view = RunView(run, self.runs_proxy_cache, self._timezone_offset)
             seq_view = SequenceView(seq_name, ctx.to_dict(), run_view)
-            match = self.query.check(**{'run': run_view, seq_var: seq_view})
-            if not match:
-                continue
-            yield self.seq_cls(seq_name, ctx, run)
+            if match := self.query.check(**{'run': run_view, seq_var: seq_view}):
+                yield self.seq_cls(seq_name, ctx, run)
 
 
 class QuerySequenceCollection(SequenceCollection):
@@ -154,7 +152,7 @@ class QuerySequenceCollection(SequenceCollection):
         self._item = 'sequence'
         self.query = query
         self.report_mode = report_mode
-        self.runs_proxy_cache = dict()
+        self.runs_proxy_cache = {}
         self._timezone_offset = timezone_offset
 
     def iter_runs(self) -> Iterator['SequenceCollection']:
@@ -163,13 +161,12 @@ class QuerySequenceCollection(SequenceCollection):
             runs_iterator = self.repo.iter_runs_from_cache()
         else:
             runs_iterator = self.repo.iter_runs()
-        runs_counter = 1
         total_runs = self.repo.total_runs_count()
 
         if self.report_mode == QueryReportMode.PROGRESS_BAR:
             progress_bar = tqdm(total=total_runs)
 
-        for run in runs_iterator:
+        for runs_counter, run in enumerate(runs_iterator, start=1):
             seq_collection = SingleRunSequenceCollection(run, self.seq_cls, self.query,
                                                          runs_proxy_cache=self.runs_proxy_cache,
                                                          timezone_offset=self._timezone_offset)
@@ -179,7 +176,6 @@ class QuerySequenceCollection(SequenceCollection):
                 if self.report_mode == QueryReportMode.PROGRESS_BAR:
                     progress_bar.update(1)
                 yield seq_collection
-            runs_counter += 1
 
     def iter(self) -> Iterator[Sequence]:
         """"""
@@ -240,11 +236,10 @@ class QueryRunSequenceCollection(SequenceCollection):
             runs_iterator = self.repo.iter_runs_from_cache(offset=self.offset)
         else:
             runs_iterator = self.repo.iter_runs()
-        runs_counter = 1
         total_runs = self.repo.total_runs_count()
         if self.report_mode == QueryReportMode.PROGRESS_BAR:
             progress_bar = tqdm(total=total_runs)
-        for run in runs_iterator:
+        for runs_counter, run in enumerate(runs_iterator, start=1):
             run_view = RunView(run, timezone_offset=self._timezone_offset)
             match = self.query.check(run=run_view)
             seq_collection = SingleRunSequenceCollection(run, self.seq_cls) if match else None
@@ -255,4 +250,3 @@ class QueryRunSequenceCollection(SequenceCollection):
                     progress_bar.update(1)
                 if match:
                     yield seq_collection
-            runs_counter += 1

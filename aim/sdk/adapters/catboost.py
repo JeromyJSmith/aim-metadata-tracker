@@ -83,8 +83,7 @@ class AimLogger:
         run = self.experiment
 
         _log = log
-        log = log.strip().split()
-        if log:
+        if log := log.strip().split():
             if len(log) == 3 and log[1] == '=':
                 run[log[0]] = self._to_number(log[2])
                 return
@@ -123,9 +122,5 @@ class AimLogger:
                         step=value_iter,
                         context={'log': 'best'},
                     )
-            else:
-                # Unhandled or junky log
-                pass
-
         if self._log_cout:
             self._log_cout.write(_log)
